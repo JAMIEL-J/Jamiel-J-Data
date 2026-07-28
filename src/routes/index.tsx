@@ -97,7 +97,7 @@ function Home() {
         {/* The Text behind */}
         <div className="absolute inset-0 flex items-center justify-center z-0 select-none overflow-hidden">
           <h1
-            className="text-[12vw] sm:text-[15vw] md:text-[17vw] uppercase leading-none animate-up text-foreground whitespace-nowrap transition-colors duration-500 font-bold"
+            className="text-[16vw] md:text-[17vw] uppercase leading-none animate-up text-foreground whitespace-nowrap transition-colors duration-500 font-bold"
             style={{ letterSpacing: "0em", transform: "scaleY(1.15)" }}
           >
             PORTFOLIO
@@ -105,7 +105,7 @@ function Home() {
         </div>
 
         {/* The Image (Zoomed in) */}
-        <div className="relative z-10 w-full max-w-[380px] md:max-w-[500px] mx-auto flex justify-center items-end animate-up mt-[15vh] pointer-events-none">
+        <div className="relative z-10 w-full max-w-[280px] sm:max-w-[320px] md:max-w-[500px] mx-auto flex justify-center items-end animate-up mt-[15vh] pointer-events-none">
           <img
             src={portrait}
             alt="Jamiel"
@@ -116,7 +116,7 @@ function Home() {
         {/* The Text in front (Stroke only overlay) */}
         <div className="absolute inset-0 flex items-center justify-center z-20 pointer-events-none select-none overflow-hidden mix-blend-overlay">
           <h1
-            className="text-[12vw] sm:text-[15vw] md:text-[17vw] uppercase leading-none animate-up text-transparent whitespace-nowrap transition-colors duration-500 font-bold"
+            className="text-[16vw] md:text-[17vw] uppercase leading-none animate-up text-transparent whitespace-nowrap transition-colors duration-500 font-bold"
             style={{ letterSpacing: "0em", transform: "scaleY(1.15)" }}
           >
             <span className="text-white text-transparent" style={{ WebkitTextFillColor: "transparent", WebkitTextStroke: "1.5px #fff" }}>PORTFOLIO</span>
