@@ -84,12 +84,14 @@ function About() {
       // Clean up previous GSAP triggers if they exist
       ScrollTrigger.getAll().forEach(t => t.refresh());
 
+      const isMobile = window.innerWidth < 768;
+
       // Slow motion slide in from left
       gsap.utils.toArray(".slide-left-card").forEach((el: any) => {
         gsap.fromTo(el,
-          { opacity: 0, x: -150 },
+          { opacity: 0, x: isMobile ? 0 : -100, y: isMobile ? 50 : 0 },
           {
-            opacity: 1, x: 0, duration: 1.5,
+            opacity: 1, x: 0, y: 0, duration: 1.5,
             ease: "power3.out",
             scrollTrigger: {
               trigger: el,
@@ -102,9 +104,9 @@ function About() {
       // Slow motion slide in from right
       gsap.utils.toArray(".slide-right-card").forEach((el: any) => {
         gsap.fromTo(el,
-          { opacity: 0, x: 150 },
+          { opacity: 0, x: isMobile ? 0 : 100, y: isMobile ? 50 : 0 },
           {
-            opacity: 1, x: 0, duration: 1.5,
+            opacity: 1, x: 0, y: 0, duration: 1.5,
             ease: "power3.out",
             scrollTrigger: {
               trigger: el,
@@ -137,7 +139,7 @@ function About() {
             </h2>
           </div>
 
-          <h1 className="text-3xl md:text-6xl font-black uppercase tracking-tighter leading-[0.9] mb-20 max-w-6xl text-reveal">
+          <h1 className="text-2xl md:text-6xl font-black uppercase tracking-tighter leading-[0.9] mb-12 md:mb-20 max-w-6xl text-reveal">
             I'm Jamiel — most people know me as Jam. I graduated with a B.Tech in Information Technology from M.I.E.T, and I work as a Data Analyst out of Pudukkottai, Tamil Nadu.
           </h1>
 
@@ -154,17 +156,17 @@ function About() {
 
             {/* Main Content Area */}
             <div className="md:col-span-9 lg:col-span-8 md:border-l border-foreground/10 md:pl-10">
-              <p className="text-xl md:text-2xl opacity-90 leading-[1.6] font-normal tracking-tight max-w-3xl">
+              <p className="text-lg md:text-2xl opacity-90 leading-[1.6] font-normal tracking-tight max-w-3xl">
                 My first real exposure to the job was as a <span className="font-bold border-b border-foreground/30 pb-0.5">Data Analyst Trainee at BY8LABS AI</span>, where I gained working proficiency in Python, Pandas, and NumPy through structured data science training focused on exploratory data analysis workflows and data validation techniques.
               </p>
-              <p className="text-xl md:text-2xl opacity-70 leading-[1.6] font-normal tracking-tight mt-6 max-w-3xl">
+              <p className="text-lg md:text-2xl opacity-70 leading-[1.6] font-normal tracking-tight mt-6 max-w-3xl">
                 Built foundational Streamlit dashboards to visualise KPI metrics, developing practical understanding of end-to-end data-to-dashboard delivery pipelines.
               </p>
 
               {/* Premium Pull-Quote */}
               <div className="mt-10 relative bg-foreground/[0.03] text-foreground p-6 md:p-8 rounded-2xl border border-foreground/10 max-w-3xl overflow-hidden">
                 <div className="absolute top-0 left-0 w-1 h-full bg-foreground/30"></div>
-                <p className="text-lg font-medium opacity-80 leading-relaxed italic">
+                <p className="text-base md:text-lg font-medium opacity-80 leading-relaxed italic">
                   "That's a fresher-level internship, and I'm not going to dress it up as more than it was — but it's where I confirmed that I actually like this work, not just the idea of it."
                 </p>
               </div>
@@ -183,15 +185,15 @@ function About() {
           </div>
 
           {/* Glass Card 1 - Left Aligned */}
-          <div className="relative z-10 w-full md:w-[95%] lg:w-[90%] mr-auto rounded-[3rem] p-10 md:p-16 lg:p-24 flex flex-col justify-start bg-white/40 dark:bg-black/40 backdrop-blur-[50px] border border-white/50 dark:border-white/10 shadow-[inset_0_1px_1px_rgba(255,255,255,0.4)] dark:shadow-[inset_0_1px_1px_rgba(255,255,255,0.1)] slide-left-card overflow-hidden group text-center items-center">
+          <div className="relative z-10 w-full md:w-[95%] lg:w-[90%] mr-auto rounded-[2rem] md:rounded-[3rem] p-6 md:p-16 lg:p-24 flex flex-col justify-start bg-white/40 dark:bg-black/40 backdrop-blur-[50px] border border-white/50 dark:border-white/10 shadow-[inset_0_1px_1px_rgba(255,255,255,0.4)] dark:shadow-[inset_0_1px_1px_rgba(255,255,255,0.1)] slide-left-card overflow-hidden group text-center items-center">
             <div className="absolute inset-0 bg-gradient-to-br from-foreground/5 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-700 pointer-events-none"></div>
 
-            <h2 className="text-4xl md:text-5xl lg:text-7xl font-black uppercase tracking-tighter leading-none mb-12 relative z-10 whitespace-nowrap">
+            <h2 className="text-3xl sm:text-4xl md:text-5xl lg:text-7xl font-black uppercase tracking-tighter leading-none mb-8 md:mb-12 relative z-10 text-balance md:whitespace-nowrap">
               How I think about the job
             </h2>
 
             <div className="flex flex-col gap-4 relative z-10 max-w-[1000px] mx-auto items-center">
-              <p className="text-xl md:text-3xl font-bold leading-tight tracking-tight text-balance">
+              <p className="text-lg md:text-3xl font-bold leading-tight tracking-tight text-balance">
                 A dashboard that looks good and tells you nothing is worse than no dashboard.
               </p>
               <p className="text-base md:text-xl opacity-80 leading-relaxed font-normal text-balance">
@@ -201,15 +203,15 @@ function About() {
           </div>
 
           {/* Glass Card 2 - Right Aligned */}
-          <div className="relative z-10 w-full md:w-[95%] lg:w-[90%] ml-auto rounded-[3rem] p-10 md:p-16 lg:p-24 flex flex-col justify-start bg-white/40 dark:bg-black/40 backdrop-blur-[50px] border border-white/50 dark:border-white/10 shadow-[inset_0_1px_1px_rgba(255,255,255,0.4)] dark:shadow-[inset_0_1px_1px_rgba(255,255,255,0.1)] slide-right-card overflow-hidden group text-center items-center">
+          <div className="relative z-10 w-full md:w-[95%] lg:w-[90%] ml-auto rounded-[2rem] md:rounded-[3rem] p-6 md:p-16 lg:p-24 flex flex-col justify-start bg-white/40 dark:bg-black/40 backdrop-blur-[50px] border border-white/50 dark:border-white/10 shadow-[inset_0_1px_1px_rgba(255,255,255,0.4)] dark:shadow-[inset_0_1px_1px_rgba(255,255,255,0.1)] slide-right-card overflow-hidden group text-center items-center">
             <div className="absolute inset-0 bg-gradient-to-bl from-foreground/5 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-700 pointer-events-none"></div>
 
-            <h2 className="text-4xl md:text-5xl lg:text-7xl font-black uppercase tracking-tighter leading-none mb-12 relative z-10 whitespace-nowrap">
+            <h2 className="text-3xl sm:text-4xl md:text-5xl lg:text-7xl font-black uppercase tracking-tighter leading-none mb-8 md:mb-12 relative z-10 text-balance md:whitespace-nowrap">
               Where I'm headed
             </h2>
 
             <div className="flex flex-col gap-4 relative z-10 max-w-[1000px] mx-auto items-center">
-              <p className="text-xl md:text-3xl font-bold leading-tight tracking-tight text-balance">
+              <p className="text-lg md:text-3xl font-bold leading-tight tracking-tight text-balance">
                 Data Analyst is where I'm strongest right now, and it's what I'm applying for.
               </p>
               <p className="text-base md:text-xl opacity-80 leading-relaxed font-normal text-balance">

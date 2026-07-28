@@ -97,7 +97,7 @@ function Home() {
         {/* The Text behind */}
         <div className="absolute inset-0 flex items-center justify-center z-0 select-none overflow-hidden">
           <h1
-            className="text-[19vw] md:text-[17vw] uppercase leading-none animate-up text-foreground whitespace-nowrap transition-colors duration-500 font-bold"
+            className="text-[12vw] sm:text-[15vw] md:text-[17vw] uppercase leading-none animate-up text-foreground whitespace-nowrap transition-colors duration-500 font-bold"
             style={{ letterSpacing: "0em", transform: "scaleY(1.15)" }}
           >
             PORTFOLIO
@@ -116,7 +116,7 @@ function Home() {
         {/* The Text in front (Stroke only overlay) */}
         <div className="absolute inset-0 flex items-center justify-center z-20 pointer-events-none select-none overflow-hidden mix-blend-overlay">
           <h1
-            className="text-[19vw] md:text-[17vw] uppercase leading-none animate-up text-transparent whitespace-nowrap transition-colors duration-500 font-bold"
+            className="text-[12vw] sm:text-[15vw] md:text-[17vw] uppercase leading-none animate-up text-transparent whitespace-nowrap transition-colors duration-500 font-bold"
             style={{ letterSpacing: "0em", transform: "scaleY(1.15)" }}
           >
             <span className="text-white text-transparent" style={{ WebkitTextFillColor: "transparent", WebkitTextStroke: "1.5px #fff" }}>PORTFOLIO</span>
@@ -167,7 +167,7 @@ function Home() {
         {/* Massive asymmetric heading */}
         <div className="grid grid-cols-1 md:grid-cols-12 gap-12 mb-20 md:mb-32">
           <div className="md:col-span-11 md:col-start-2 lg:col-span-10 lg:col-start-2">
-            <h2 className="text-5xl md:text-7xl lg:text-[6.5rem] font-black leading-[0.9] tracking-tighter uppercase text-left">
+            <h2 className="text-4xl md:text-7xl lg:text-[6.5rem] font-black leading-[0.9] tracking-tighter uppercase text-left">
               Data Analyst who builds <span className="text-foreground/30">the dashboards nobody has to explain twice.</span>
             </h2>
           </div>
@@ -182,13 +182,13 @@ function Home() {
 
           {/* Main Statement (Centered) */}
           <div className="glass-reveal relative z-10 max-w-5xl mx-auto text-center mb-12 md:mb-16">
-            <h3 className="text-4xl md:text-6xl lg:text-[4.25rem] font-medium leading-[1.1] tracking-tight">
+            <h3 className="text-3xl md:text-6xl lg:text-[4.25rem] font-medium leading-[1.1] tracking-tight">
               I find where the money's leaking, forecast where it's going,<br className="hidden md:block" /> and tell you which customers actually matter.
             </h3>
           </div>
 
           {/* Apple-style Liquid Glass Flow Card */}
-          <div className="glass-card relative z-10 w-full max-w-4xl p-8 md:p-12 lg:p-16 rounded-[2.5rem] md:rounded-[3rem] bg-white/40 dark:bg-black/40 backdrop-blur-[50px] border border-black/5 dark:border-white/10 shadow-[0_24px_48px_rgba(0,0,0,0.1)] dark:shadow-[0_24px_48px_rgba(0,0,0,0.4)] overflow-hidden ring-1 ring-inset ring-white/60 dark:ring-white/10">
+          <div className="glass-card relative z-10 w-full max-w-4xl p-6 md:p-12 lg:p-16 rounded-[2rem] md:rounded-[3rem] bg-white/40 dark:bg-black/40 backdrop-blur-[50px] border border-black/5 dark:border-white/10 shadow-[0_24px_48px_rgba(0,0,0,0.1)] dark:shadow-[0_24px_48px_rgba(0,0,0,0.4)] overflow-hidden ring-1 ring-inset ring-white/60 dark:ring-white/10">
              
              {/* Apple-style inner highlight / liquid reflection */}
              <div className="absolute inset-0 bg-gradient-to-br from-white/40 to-transparent dark:from-white/10 opacity-50 pointer-events-none mix-blend-overlay"></div>
@@ -220,7 +220,7 @@ function Home() {
       <section className="py-24 md:py-48 px-6 md:px-12 max-w-[1200px] mx-auto flex flex-col gap-12 relative pb-[50vh]">
 
         {/* PILLAR 1: DATA */}
-        <div className="sticky top-[10vh] md:top-[12vh] w-full bg-foreground text-background rounded-3xl p-6 md:p-10 shadow-2xl flex flex-col md:flex-row gap-8 items-center z-10 transition-transform">
+        <div className="sticky top-[5vh] md:top-[12vh] w-full bg-foreground text-background rounded-3xl p-6 md:p-10 shadow-2xl flex flex-col md:flex-row gap-8 items-center z-10 transition-transform">
           <div className="md:w-1/2 flex flex-col gap-4">
             <div className="text-sm font-bold uppercase tracking-widest opacity-70 border-b border-background/20 pb-4">01 // Data Engineering</div>
             <h2 className="text-[10vw] md:text-[5vw] font-black leading-[0.85] tracking-tighter uppercase mt-2">Revenue<br />Leakage</h2>
@@ -243,7 +243,7 @@ function Home() {
         </div>
 
         {/* PILLAR 2: AI */}
-        <div className="sticky top-[14vh] md:top-[16vh] w-full bg-zinc-900 text-white rounded-3xl p-6 md:p-10 shadow-2xl flex flex-col md:flex-row-reverse gap-8 items-center z-20 transition-transform border border-white/10">
+        <div className="sticky top-[7vh] md:top-[16vh] w-full bg-zinc-900 text-white rounded-3xl p-6 md:p-10 shadow-2xl flex flex-col md:flex-row-reverse gap-8 items-center z-20 transition-transform border border-white/10">
           <div className="md:w-1/2 flex flex-col gap-4">
             <div className="text-sm font-bold uppercase tracking-widest opacity-70 border-b border-white/20 pb-4">02 // Artificial Intelligence</div>
             <h2 className="text-[10vw] md:text-[5vw] font-black leading-[0.85] tracking-tighter uppercase mt-2">Vizzy<br />Pilot</h2>
@@ -266,7 +266,7 @@ function Home() {
         </div>
 
         {/* PILLAR 3: ANALYSIS */}
-        <div className="sticky top-[18vh] md:top-[20vh] w-full bg-background text-foreground rounded-3xl p-6 md:p-10 shadow-2xl flex flex-col md:flex-row gap-8 items-center z-30 transition-transform border border-foreground/10">
+        <div className="sticky top-[9vh] md:top-[20vh] w-full bg-background text-foreground rounded-3xl p-6 md:p-10 shadow-2xl flex flex-col md:flex-row gap-8 items-center z-30 transition-transform border border-foreground/10">
           <div className="md:w-1/2 flex flex-col gap-4">
             <div className="text-sm font-bold uppercase tracking-widest opacity-70 border-b border-foreground/20 pb-4">03 // Predictive Analytics</div>
             <h2 className="text-[10vw] md:text-[5vw] font-black leading-[0.85] tracking-tighter uppercase mt-2">Churn<br />Prediction</h2>

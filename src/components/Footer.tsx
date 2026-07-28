@@ -41,7 +41,7 @@ export function Footer() {
       <div className="max-w-[1400px] mx-auto px-6 md:px-12 flex flex-col h-full">
         
         {/* Top Section */}
-        <div className="flex flex-col md:flex-row justify-between items-start md:items-end mb-24 gap-12">
+        <div className="flex flex-col md:flex-row justify-between items-start md:items-end mb-16 md:mb-24 gap-8 md:gap-12">
           <div className="max-w-md">
             <h3 className="text-2xl md:text-4xl font-medium mb-6">Ready to make something exceptional?</h3>
             <p className="text-background/60 text-lg">
@@ -57,7 +57,7 @@ export function Footer() {
 
         {/* Massive Typography */}
         <div className="overflow-hidden mb-16 border-b border-background/20 pb-16 flex justify-between">
-          <h2 className="text-[13vw] md:text-[15vw] font-black uppercase tracking-tighter leading-none flex">
+          <h2 className="text-[9vw] sm:text-[11vw] md:text-[15vw] font-black uppercase tracking-tighter leading-none flex flex-wrap">
             {title.map((char, i) => (
               <span key={i} className="footer-char inline-block">
                 {char === " " ? "\u00A0" : char}

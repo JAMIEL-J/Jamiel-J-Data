@@ -16,17 +16,17 @@ function Contact() {
   }, []);
 
   return (
-    <div className="min-h-[100dvh] pt-48 pb-24 px-6 md:px-12 flex flex-col justify-between max-w-[1400px] mx-auto">
+    <div className="min-h-[100dvh] pt-32 md:pt-48 pb-16 md:pb-24 px-6 md:px-12 flex flex-col justify-between max-w-[1400px] mx-auto">
       
       {/* Editorial Header */}
-      <div className="flex flex-col items-center text-center mb-32">
+      <div className="flex flex-col items-center text-center mb-16 md:mb-32">
         <div className="flex items-center justify-center gap-4 mb-8 contact-animate">
             <span className="w-2 h-2 rounded-full bg-foreground animate-pulse"></span>
             <h2 className="text-sm font-bold uppercase tracking-widest opacity-50">
               Open for Opportunities
             </h2>
         </div>
-        <h1 className="contact-animate text-[12vw] md:text-[10vw] font-black uppercase tracking-tighter leading-none mb-12">
+        <h1 className="contact-animate text-[10vw] md:text-[10vw] font-black uppercase tracking-tighter leading-none mb-8 md:mb-12">
           LET'S TALK.
         </h1>
         <p className="contact-animate text-xl md:text-2xl lg:text-3xl font-medium tracking-tight w-full max-w-full opacity-80 leading-snug">

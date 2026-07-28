@@ -342,7 +342,7 @@ function Projects() {
               <div className="relative z-10 flex flex-col md:flex-row md:items-center gap-6 md:gap-16 w-full text-foreground group-hover:text-background transition-colors duration-500">
                 <div className="text-sm font-black uppercase tracking-widest opacity-50 w-8">0{i + 1}</div>
                 <div className="flex flex-col">
-                  <h2 className="text-4xl md:text-[5vw] font-black uppercase tracking-tighter leading-[0.85] group-hover:translate-x-8 transition-transform duration-500 ease-out">{c.title}</h2>
+                  <h2 className="text-3xl md:text-[5vw] font-black uppercase tracking-tighter leading-[0.85] group-hover:translate-x-8 transition-transform duration-500 ease-out">{c.title}</h2>
                   <div className="text-sm md:text-lg font-bold uppercase tracking-widest opacity-70 mt-4 group-hover:translate-x-8 transition-transform duration-500 ease-out delay-75">{c.tag}</div>
                 </div>
 
@@ -371,7 +371,7 @@ function Projects() {
 
         {/* Panel */}
         <div
-          className={`relative w-full md:w-[850px] h-full bg-foreground text-background shadow-2xl p-8 md:p-16 flex flex-col overflow-y-auto transition-transform duration-500 ease-out transform ${activeProject ? 'translate-x-0' : 'translate-x-full'}`}
+          className={`relative w-full md:w-[850px] h-full bg-foreground text-background shadow-2xl p-6 md:p-16 flex flex-col overflow-y-auto transition-transform duration-500 ease-out transform ${activeProject ? 'translate-x-0' : 'translate-x-full'}`}
         >
           <button
             onClick={() => setActiveProject(null)}
@@ -382,9 +382,9 @@ function Projects() {
 
           {activeProject && (
             <div className="mt-16 animate-up pb-16">
-              <div className="text-sm uppercase tracking-widest opacity-70 mb-8 border-b border-background/20 pb-4">{activeProject.tag}</div>
-              <h2 className="text-4xl md:text-5xl font-black tracking-tighter leading-tight mb-8">{activeProject.title}</h2>
-              <p className="text-xl opacity-80 leading-relaxed mb-8">{activeProject.excerpt}</p>
+              <div className="text-sm uppercase tracking-widest opacity-70 mb-6 md:mb-8 border-b border-background/20 pb-4">{activeProject.tag}</div>
+              <h2 className="text-3xl md:text-5xl font-black tracking-tighter leading-tight mb-6 md:mb-8">{activeProject.title}</h2>
+              <p className="text-lg md:text-xl opacity-80 leading-relaxed mb-8">{activeProject.excerpt}</p>
 
               {/* Links Placeholders */}
               <div className="flex flex-wrap items-center gap-4 mb-12">
