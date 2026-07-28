@@ -177,8 +177,8 @@ function Home() {
         <div className="glass-section relative w-full mt-16 md:mt-32 md:mb-24 text-foreground flex flex-col items-center px-6 md:px-12">
           
           {/* Background shapes to make the glass refraction visible */}
-          <div className="absolute top-[20%] left-[20%] w-[500px] h-[500px] bg-foreground/[0.08] blur-[120px] rounded-full pointer-events-none z-0"></div>
-          <div className="absolute top-[50%] right-[10%] w-[400px] h-[400px] bg-foreground/[0.05] blur-[100px] rounded-full pointer-events-none z-0"></div>
+          <div className="absolute top-[20%] left-[10%] md:left-[20%] w-[80vw] max-w-[500px] h-[80vw] max-h-[500px] bg-foreground/[0.08] blur-[80px] md:blur-[120px] rounded-full pointer-events-none z-0"></div>
+          <div className="absolute top-[50%] right-[5%] md:right-[10%] w-[70vw] max-w-[400px] h-[70vw] max-h-[400px] bg-foreground/[0.05] blur-[60px] md:blur-[100px] rounded-full pointer-events-none z-0"></div>
 
           {/* Main Statement (Centered) */}
           <div className="glass-reveal relative z-10 max-w-5xl mx-auto text-center mb-12 md:mb-16">

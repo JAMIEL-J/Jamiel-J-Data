@@ -164,7 +164,7 @@ function Navbar() {
   };
 
   return (
-    <div className="fixed top-6 left-1/2 -translate-x-1/2 z-50 w-full px-6 flex justify-center pointer-events-none">
+    <div className="fixed top-6 inset-x-0 z-50 w-full px-6 flex justify-center pointer-events-none">
       <nav className="pointer-events-auto glass-card px-6 py-4 rounded-[2rem] md:rounded-full flex flex-col md:flex-row justify-between md:items-center w-full max-w-4xl bg-background/80 backdrop-blur-md border border-foreground/10">
         
         {/* Top Row: Logo & Mobile Toggles */}
