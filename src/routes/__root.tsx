@@ -8,7 +8,7 @@ import {
   Scripts,
 } from "@tanstack/react-router";
 import { type ReactNode, useState, useEffect } from "react";
-import { Moon, Sun } from "lucide-react";
+import { Moon, Sun, Menu, X } from "lucide-react";
 import { Footer } from "../components/Footer";
 
 import appCss from "../styles.css?url";
@@ -146,6 +146,7 @@ function RootShell({ children }: { children: ReactNode }) {
 
 function Navbar() {
   const [dark, setDark] = useState(false);
+  const [menuOpen, setMenuOpen] = useState(false);
 
   useEffect(() => {
     if (typeof document !== "undefined") {
@@ -163,23 +164,38 @@ function Navbar() {
   };
 
   return (
-    <div className="fixed top-6 left-1/2 -translate-x-1/2 z-50 pointer-events-none w-full px-6 flex justify-center">
-      <nav className="pointer-events-auto glass-card px-6 py-4 rounded-full flex justify-between items-center w-full max-w-4xl">
-        <Link to="/" className="font-bold text-xs tracking-widest uppercase hover:opacity-70 transition-opacity flex items-center gap-3">
-          <div className="w-2 h-2 bg-foreground rounded-full animate-pulse" />
-          Jamiel J
-        </Link>
-        <div className="flex gap-6 items-center">
-          <div className="hidden md:flex gap-6 items-center uppercase text-xs tracking-widest font-bold">
-            <Link to="/about" className="hover:opacity-70 transition-opacity [&.active]:opacity-50">About</Link>
-            <Link to="/projects" className="hover:opacity-70 transition-opacity [&.active]:opacity-50">Projects</Link>
-            <Link to="/contact" className="hover:opacity-70 transition-opacity [&.active]:opacity-50">Contact</Link>
+    <div className="fixed top-6 left-1/2 -translate-x-1/2 z-50 w-full px-6 flex justify-center pointer-events-none">
+      <nav className="pointer-events-auto glass-card px-6 py-4 rounded-[2rem] md:rounded-full flex flex-col md:flex-row justify-between md:items-center w-full max-w-4xl bg-background/80 backdrop-blur-md border border-foreground/10">
+        
+        {/* Top Row: Logo & Mobile Toggles */}
+        <div className="flex justify-between items-center w-full">
+          <Link to="/" onClick={() => setMenuOpen(false)} className="font-bold text-xs tracking-widest uppercase hover:opacity-70 transition-opacity flex items-center gap-3">
+            <div className="w-2 h-2 bg-foreground rounded-full animate-pulse" />
+            Jamiel J
+          </Link>
+          
+          <div className="flex md:hidden items-center gap-4">
+            <button onClick={toggleTheme} className="hover:opacity-70 transition-opacity">
+              {dark ? <Sun size={18} /> : <Moon size={18} />}
+            </button>
+            <button onClick={() => setMenuOpen(!menuOpen)} className="hover:opacity-70 transition-opacity">
+              {menuOpen ? <X size={20} /> : <Menu size={20} />}
+            </button>
           </div>
+        </div>
+
+        {/* Links Array (Desktop + Mobile Dropdown) */}
+        <div className={`${menuOpen ? "flex" : "hidden"} md:flex flex-col md:flex-row gap-6 md:items-center mt-6 md:mt-0 uppercase text-xs tracking-widest font-bold w-full md:w-auto`}>
+          <Link to="/about" onClick={() => setMenuOpen(false)} className="hover:opacity-70 transition-opacity [&.active]:opacity-50 border-b md:border-none border-foreground/10 pb-4 md:pb-0">About</Link>
+          <Link to="/projects" onClick={() => setMenuOpen(false)} className="hover:opacity-70 transition-opacity [&.active]:opacity-50 border-b md:border-none border-foreground/10 pb-4 md:pb-0">Projects</Link>
+          <Link to="/contact" onClick={() => setMenuOpen(false)} className="hover:opacity-70 transition-opacity [&.active]:opacity-50 border-b md:border-none border-foreground/10 pb-4 md:pb-0">Contact</Link>
+          
           <div className="w-px h-4 bg-foreground/20 hidden md:block" />
-          <button onClick={toggleTheme} className="hover:opacity-70 transition-opacity">
+          <button onClick={toggleTheme} className="hover:opacity-70 transition-opacity hidden md:block">
             {dark ? <Sun size={16} /> : <Moon size={16} />}
           </button>
         </div>
+
       </nav>
     </div>
   );
@@ -190,7 +206,7 @@ function RootComponent() {
 
   return (
     <QueryClientProvider client={queryClient}>
-      <div className="bg-background text-foreground min-h-screen font-sans flex flex-col">
+      <div className="bg-background text-foreground min-h-screen font-sans flex flex-col overflow-x-hidden w-full max-w-[100vw]">
         <Navbar />
         <main className="flex-grow">
           <Outlet />
