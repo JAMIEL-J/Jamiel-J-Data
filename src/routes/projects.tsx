@@ -1,6 +1,6 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { useEffect, useRef, useState } from "react";
-import { X, ArrowRight } from "lucide-react";
+import { X, ArrowRight, Github, ExternalLink } from "lucide-react";
 import gsap from "gsap";
 import { ScrollTrigger } from "gsap/ScrollTrigger";
 
@@ -15,6 +15,8 @@ const CASE_STUDIES = [
     title: "Revenue Leak Detection",
     tag: "Data Case Study",
     excerpt: "End-to-End E-commerce Conversion Funnel Optimization.",
+    liveLink: "https://public.tableau.com/views/RevenueLeakAnalysis/E-commerceFunnelRevenueLeakageAnalysis?:language=en-US&:sid=&:redirect=auth&:display_count=n&:origin=viz_share_link",
+    githubLink: "https://github.com/JAMIEL-J/Conversion-Funnel-Analysis",
     fullSpecs: {
       problem: "\"Why are users viewing products but not completing purchases? Where exactly is the funnel breaking?\" This project identifies where revenue is being lost in an e-commerce conversion funnel and provides data-driven recommendations to optimize user journeys and maximize revenue.",
       keyFindings: {
@@ -44,6 +46,8 @@ const CASE_STUDIES = [
     title: "Customer Churn Prediction",
     tag: "Analysis & Model",
     excerpt: "Business-aware retention optimization using threshold tuning and ROI analysis.",
+    liveLink: "https://customer-churn-predictionss.streamlit.app/",
+    githubLink: "https://github.com/JAMIEL-J/Customer-Churn-Prediction",
     fullSpecs: {
       problem: "Customer churn directly impacts revenue. Traditional ML models predict churn but don't specify who to contact or how much to spend. Without proper threshold optimization, businesses either overspend on retention or miss at-risk customers.",
       solution: "Hypothesis-driven feature engineering based on validated business assumptions. Implemented a cost-benefit analysis using business metrics (CLV, retention cost, success rate) to optimize decision thresholds based purely on ROI rather than ML accuracy.",
@@ -63,17 +67,62 @@ const CASE_STUDIES = [
     title: "Customer Segmentation & Revenue Analysis",
     tag: "Data Case Study",
     excerpt: "Strategic RFM Segmentation to identify revenue concentration and retention risk.",
-    details: [
-      "Categorized customer revenue concentration and churn risk as measured by identifying that ~80% of total revenue is driven by a highly concentrated segment, by engineering Recency, Frequency, and Monetary (RFM) metrics from raw transactional data using MySQL.",
-      "Designed segment-specific retention strategies as measured by isolating high-value, at-risk customers representing the largest revenue threat, by validating RFM cohorts and analyzing revenue distribution using Python (pandas).",
-      "Enabled data-driven marketing decision-making as measured by delivering clear visibility into long-tail revenue distribution, by building an interactive executive dashboard in Power BI."
-    ],
+    liveLink: "https://public.tableau.com/views/CustomerSegmentdashboard/Dashboard1?:language=en-US&:sid=&:redirect=auth&:display_count=n&:origin=viz_share_link",
+    githubLink: "https://github.com/JAMIEL-J/Customer-segmentation-RFM",
+    fullSpecs: {
+      problem: "Many businesses apply uniform marketing and retention strategies across all customers, resulting in inefficient spend. This project analyzes customer-level revenue concentration and retention risk using RFM (Recency, Frequency, Monetary) segmentation. The goal is to answer: Which customers actually drive revenue, and where should retention efforts be focused to protect future revenue?",
+      solution: "The project follows a production-style analytics pipeline (SQL → Python → Power BI). SQL was used as the primary analytics engine to clean data and aggregate transactions to compute RFM metrics. Python was used for validation, ensuring segment sizes and revenue distributions were logically consistent. Finally, an interactive Power BI dashboard was built to communicate insights clearly, using rule-based segmentation to ensure interpretability for stakeholders.",
+      keyFindings: {
+        metrics: [
+          { label: "High-Value Revenue", value: "~80%" },
+          { label: "Segmentation", value: "RFM" },
+          { label: "Data Source", value: "Transactions" },
+          { label: "Approach", value: "Rule-Based" }
+        ],
+        insightsList: [
+          {
+            title: "1️⃣ Revenue Is Highly Concentrated Among High-Value Customers",
+            finding: "A relatively small group of High-Value customers contributes ~80% of total revenue.",
+            impact: "Heavy reliance on a small customer subset.",
+            implication: "Revenue stability depends heavily on retaining this small customer subset."
+          },
+          {
+            title: "2️⃣ At-Risk High-Value Customers Represent the Largest Revenue Threat",
+            finding: "Customers with strong historical value but declining recency pose a significant retention risk.",
+            impact: "High potential revenue loss.",
+            implication: "Losing a small number of these customers would have an outsized revenue impact."
+          },
+          {
+            title: "3️⃣ Low-Value and Lost Customers Form a Large Base but Generate Minimal Revenue",
+            finding: "A large share of customers contributes little to overall revenue.",
+            impact: "Inefficient spend on broad campaigns.",
+            implication: "Broad acquisition or blanket retention campaigns are inefficient."
+          },
+          {
+            title: "4️⃣ Revenue Distribution Is Heavily Skewed",
+            finding: "Customer revenue follows a long-tail distribution.",
+            impact: "One-size-fits-all approaches fail.",
+            implication: "Targeted, segment-specific strategies significantly outperform blanket approaches."
+          }
+        ],
+        insight: "💡 Key Learnings: Separating responsibilities across tools improves clarity: SQL for data logic, Python for validation, and Power BI for communication. Customer-level analysis reveals risks hidden in aggregate sales metrics.",
+        action: "Deliverable: Executive Power BI Dashboard for targeted retention strategies."
+      },
+      specs: [
+        "SQL (MySQL): Cleaned transactional data, engineered RFM features, and applied rule-based segmentation.",
+        "Python (pandas, SQLAlchemy): Validated SQL-derived metrics and verified segment consistency.",
+        "Power BI: Built an executive dashboard with KPI cards and interactive slicers for dynamic exploration.",
+        "Dataset Constraints: Addressed returns/negative quantities, skewed revenue, and one-time vs repeat buyers."
+      ]
+    },
     metrics: ["MySQL", "Python", "Power BI", "Pandas"]
   },
   {
     title: "Demand Forecasting & Inventory",
     tag: "Analysis & Model",
     excerpt: "End-to-End Decision-Support System for Retail Supply Chains.",
+    liveLink: "https://demand-forecasting-and-inventory-optimization.streamlit.app/",
+    githubLink: "https://github.com/JAMIEL-J/Demand-Forecasting-and-Inventory-Optimization",
     fullSpecs: {
       problem: "Retail businesses incur major losses from stockouts and excess inventory due to uncertain demand. Ordering the average expected demand results in a ~50% stockout probability under skewed distributions, as most systems ignore risk.",
       keyFindings: {
@@ -83,6 +132,7 @@ const CASE_STUDIES = [
           { label: "Service Coverage", value: "~90%" },
           { label: "Locations Scaled", value: "45" }
         ],
+        tableHeaders: ["Model", "Error (WAPE)", "Error (MAE)", "Rank"],
         table: [
           { stage: "XGBoost", lost: "4.01% WAPE", impact: "64,190 MAE", priority: "🏆 Best" },
           { stage: "Prophet", lost: "5.36% WAPE", impact: "84,610 MAE", priority: "🥈 2nd" },
@@ -105,29 +155,50 @@ const CASE_STUDIES = [
     title: "Sales Performance & Territory Optimization",
     tag: "Data Case Study",
     excerpt: "E-commerce sales analysis identifying revenue concentration and scalability.",
+    liveLink: "https://public.tableau.com/views/SalesanalysisDashboard_17684576286910/Dashboard1?:language=en-US&:sid=&:redirect=auth&:display_count=n&:origin=viz_share_link",
+    githubLink: "https://github.com/JAMIEL-J/Sales-performance-Optimization",
     fullSpecs: {
-      problem: "E-commerce platforms often suffer from hidden dependencies. This analysis sought to identify critical revenue concentration risks, territory inefficiencies, and severe supply-side seller dependencies to locate scalable growth opportunities.",
+      problem: "This project analyzes e-commerce sales performance to identify revenue concentration risks, territory inefficiencies, and seller dependency patterns. Using cleaned transactional data, the analysis focuses on where revenue comes from, who drives it, and where scalable growth opportunities exist.",
       keyFindings: {
         metrics: [
-          { label: "Total Revenue", value: "₹13.59M" },
-          { label: "Orders Tracked", value: "98,666" },
-          { label: "Avg Item Price", value: "₹120.65" },
-          { label: "Gross Revenue", value: "₹15.84M" }
+          { label: "Total Orders", value: "98,666" },
+          { label: "Total Sales Rev", value: "₹13.59M" },
+          { label: "Gross Revenue", value: "₹15.84M" },
+          { label: "Avg Item Price", value: "₹120.65" }
         ],
-        table: [
-          { stage: "Customer Concent.", lost: "Top 3 States (SP, RJ, MG)", impact: "~63% Revenue", priority: "⚠️ Risk" },
-          { stage: "Seller Concent.", lost: "São Paulo", impact: "~64% Revenue", priority: "⚠️ Risk" },
-          { stage: "Seller Dependency", lost: "Top vs Low Performers", impact: "₹200K vs <₹1K", priority: "🔴 Severe" },
-          { stage: "Growth Markets", lost: "RS, PR, SC, BA", impact: "Mid-Tier", priority: "✅ Target" }
+        insightsList: [
+          {
+            title: "1️⃣ Revenue Is Highly Concentrated Geographically",
+            finding: "Top 3 customer states (SP, RJ, MG) contribute ~63% of total revenue.",
+            impact: "Heavy reliance on single state (São Paulo contributes ~38% revenue).",
+            implication: "Strong demand but significant geographic concentration risk."
+          },
+          {
+            title: "2️⃣ Seller-Side Concentration Exceeds Customer Demand",
+            finding: "Sellers based in São Paulo generate ~64% of total platform revenue.",
+            impact: "Revenue risk is driven more by seller concentration than customer demand.",
+            implication: "Significant supply-side dependency."
+          },
+          {
+            title: "3️⃣ A Small Group of Sellers Dominates Revenue",
+            finding: "Top Performers generate ₹200K+ individually, while Low Performers generate <₹1,000 despite multiple orders.",
+            impact: "High variance in seller execution and revenue contribution.",
+            implication: "High dependency on top sellers and inefficiency among low-value sellers."
+          },
+          {
+            title: "4️⃣ Mid-Tier States Offer the Best Growth Opportunity",
+            finding: "Target Regions: RS, PR, SC, BA show meaningful revenue without heavy saturation.",
+            impact: "Untapped regional markets with favorable demand-to-seller ratios.",
+            implication: "Higher ROI for seller expansion and regional marketing."
+          }
         ],
-        insight: "💡 Key Insights: Revenue risk is driven heavily by seller concentration in a single state (São Paulo). A small group of top performers dominates revenue generation.",
-        action: "Executive Priority: Target Mid-Tier States (RS, PR, SC, BA) for higher ROI seller expansion."
+        insight: "💡 Key Takeaway: Sales growth is constrained not by demand, but by execution concentration and seller dependency. Optimizing seller distribution, reducing over-reliance on a few regions, and focusing on mid-tier states can unlock scalable growth without increasing acquisition costs.",
+        action: "Deliverable: Tableau dashboard for stakeholders to monitor sales KPIs, compare demand vs. supply, and assess category concentration."
       },
-      solution: "Built a unified sales_fact table at order-item granularity (staging → clean pattern) using MySQL ETL pipelines. Resolved precision issues and missing numeric values to guarantee data integrity.",
-      howItWorks: "Conducted analytical reasoning and performance distribution validation in Python, culminating in an interactive demand vs. supply territory dashboard in Tableau.",
+      solution: "Implemented a staging → clean table pattern to handle data integrity: handling missing numeric values, correcting empty timestamps, and resolving precision issues in geographic data. Built a unified sales_fact table at order-item granularity to support all downstream analysis. Each row represents one delivered order item enriched with customer/seller geography and revenue metrics.",
       specs: [
-        "Quantified high-risk geographic revenue concentration (~63% of revenue from just three states).",
-        "Identified severe execution vulnerabilities (~64% of total platform revenue reliant on one state's sellers).",
+        "Identified geographic revenue concentration risk (~63% of revenue from 3 states).",
+        "Quantified severe supply-side seller dependency (~64% of platform revenue reliant on SP sellers).",
         "Formulated scalable expansion strategies targeting mid-tier regional markets for optimized ROI."
       ]
     },
@@ -137,6 +208,7 @@ const CASE_STUDIES = [
     title: "Customer Support SLA & Satisfaction Analysis",
     tag: "Interactive Dashboard",
     excerpt: "Interactive Excel dashboard identifying SLA breaches and satisfaction drivers.",
+    githubLink: "https://github.com/JAMIEL-J/Customer-Support-SLA-Satisfaction-Analysis-Using-Excel",
     details: [
       "Identified critical customer support operational bottlenecks as measured by detecting a 47.29% resolution SLA breach and 55% first response delay, by building an interactive Pivot Chart dashboard and mapping SLA threshold rules in Excel.",
       "Flagged severe high-risk ticket priority failures as measured by uncovering an 88.43% SLA breach rate for urgent issues, by conducting calculated field analysis on response and resolution times using Excel logic functions.",
@@ -148,6 +220,7 @@ const CASE_STUDIES = [
     title: "Vizzy Pilot",
     tag: "Flagship System",
     excerpt: "Natural language to validated SQL. Features an interactive BI canvas with automated data cleaning and hybrid execution routing.",
+    githubLink: "https://github.com/JAMIEL-J/Vizzy-Pilot",
     fullSpecs: {
       problem: "Data teams face a severe workflow bottleneck when non-technical stakeholders require custom aggregations or transformations, forcing analysts to manually write and debug SQL. Ad-hoc transformations without tracking severely degrade data trust.",
       solution: "Vizzy Pilot translates natural language queries into validated database operations, delivering results directly onto an interactive business intelligence canvas. It handles end-to-end data preparation—from automated cleaning to rendering cross-filtering charts, KPIs, and calculated fields derived purely from NL.",
@@ -167,6 +240,7 @@ const CASE_STUDIES = [
     title: "DNA — Local AI Assistant",
     tag: "Flagship System",
     excerpt: "A fully local voice assistant engineered for low-end hardware (Intel i3, 8GB RAM, no GPU).",
+    githubLink: "https://github.com/JAMIEL-J/DNA-Desktop-Assistant-",
     fullSpecs: {
       problem: "Running AI voice assistants locally typically requires expensive high-end GPUs. Furthermore, standard orchestration frameworks like LangChain introduce severe latency bottlenecks on low-end hardware.",
       solution: "DNA is a fully localized voice assistant built specifically to run on an Intel i3 laptop with 8GB RAM and no GPU. It completely bypasses heavy frameworks, utilizing direct API execution and INT8 quantization.",
@@ -184,8 +258,11 @@ const CASE_STUDIES = [
 ];
 
 function Projects() {
-  const stackRef = useRef<HTMLDivElement>(null);
-  const [activeProject, setActiveProject] = useState<typeof CASE_STUDIES[0] | null>(null);
+  const [activeProject, setActiveProject] = useState<any | null>(null);
+  const [filterTag, setFilterTag] = useState<string>("All");
+
+  const tags = ["All", ...Array.from(new Set(CASE_STUDIES.map(c => c.tag)))];
+  const filteredProjects = filterTag === "All" ? CASE_STUDIES : CASE_STUDIES.filter(c => c.tag === filterTag);
 
   useEffect(() => {
     // Lock body scroll when modal is open
@@ -202,8 +279,8 @@ function Projects() {
     if (prefersReduced) return;
 
     gsap.fromTo(
-      ".hero-text", 
-      { y: 60, opacity: 0 }, 
+      ".hero-text",
+      { y: 60, opacity: 0 },
       { y: 0, opacity: 1, duration: 1, ease: "power3.out", delay: 0.1 }
     );
 
@@ -223,39 +300,52 @@ function Projects() {
         </h1>
       </div>
 
-      <div className="relative z-10 pt-48 pb-16 px-6 md:px-12 max-w-[1400px] mx-auto flex flex-col md:flex-row md:items-end justify-between gap-12 border-b-2 border-foreground mb-4">
-        <div className="flex flex-col">
-          <div className="hero-text text-sm font-bold uppercase tracking-widest opacity-50 mb-8 flex items-center gap-4">
-            <span className="w-2 h-2 rounded-full bg-foreground animate-pulse"></span>
-            Selected Works
-          </div>
-          <h1 className="hero-text text-6xl md:text-[10vw] font-black uppercase tracking-tighter leading-[0.85]">
-            Case<br />Studies
-          </h1>
+      <div className="relative z-10 pt-48 pb-24 px-6 md:px-12 max-w-[1400px] mx-auto flex flex-col items-center text-center gap-10 border-b border-foreground/10 mb-8">
+        <div className="hero-text text-xs md:text-sm font-bold uppercase tracking-widest opacity-50 flex items-center gap-4 border border-foreground/20 rounded-full px-6 py-2 bg-foreground/[0.02]">
+          <span className="w-2 h-2 rounded-full bg-foreground animate-pulse"></span>
+          Archive — Selected Works
         </div>
-        <p className="hero-text text-xl md:text-2xl max-w-md opacity-80 leading-relaxed md:pb-4">
-          Deep dives into complex datasets that resulted in measurable business outcomes, prioritizing strategic ROI over pure technical complexity.
-        </p>
+        
+        <h1 className="hero-text text-6xl md:text-8xl lg:text-[9rem] font-black uppercase tracking-tighter leading-[0.85] text-balance">
+          Case Studies
+        </h1>
       </div>
 
       <div className="relative z-10 w-full max-w-[1400px] mx-auto px-6 md:px-12 pb-48">
+        {/* Filter Bar */}
+        <div className="flex flex-wrap items-center gap-4 mb-12">
+          {tags.map(tag => (
+            <button
+              key={tag}
+              onClick={() => setFilterTag(tag)}
+              className={`px-6 py-2 rounded-full text-sm font-bold uppercase tracking-widest transition-colors ${
+                filterTag === tag 
+                  ? "bg-foreground text-background" 
+                  : "bg-transparent border border-foreground/20 hover:border-foreground"
+              }`}
+            >
+              {tag}
+            </button>
+          ))}
+        </div>
+
         <div>
-          {CASE_STUDIES.map((c, i) => (
-            <div 
-              key={i} 
+          {filteredProjects.map((c, i) => (
+            <div
+              key={i}
               onClick={() => setActiveProject(c)}
               className="project-row group relative flex flex-col md:flex-row md:items-center justify-between py-12 md:py-20 border-b-2 border-foreground/20 hover:border-foreground transition-colors cursor-pointer overflow-hidden"
             >
               {/* Background fill animation */}
               <div className="absolute inset-0 bg-foreground origin-bottom scale-y-0 group-hover:scale-y-100 transition-transform duration-500 ease-[cubic-bezier(0.7,0,0.3,1)] z-0"></div>
-              
+
               <div className="relative z-10 flex flex-col md:flex-row md:items-center gap-6 md:gap-16 w-full text-foreground group-hover:text-background transition-colors duration-500">
                 <div className="text-sm font-black uppercase tracking-widest opacity-50 w-8">0{i + 1}</div>
                 <div className="flex flex-col">
                   <h2 className="text-4xl md:text-[5vw] font-black uppercase tracking-tighter leading-[0.85] group-hover:translate-x-8 transition-transform duration-500 ease-out">{c.title}</h2>
                   <div className="text-sm md:text-lg font-bold uppercase tracking-widest opacity-70 mt-4 group-hover:translate-x-8 transition-transform duration-500 ease-out delay-75">{c.tag}</div>
                 </div>
-                
+
                 <div className="md:ml-auto flex flex-wrap gap-3 mt-6 md:mt-0 opacity-0 group-hover:opacity-100 md:group-hover:-translate-x-8 transition-all duration-500 ease-out delay-100">
                   {c.metrics.slice(0, 3).map(metric => (
                     <span key={metric} className="px-4 py-2 border border-current rounded-full text-xs font-bold uppercase tracking-widest whitespace-nowrap">
@@ -270,20 +360,20 @@ function Projects() {
       </div>
 
       {/* Floating Panel (Modal) */}
-      <div 
+      <div
         className={`fixed inset-0 z-50 flex justify-end transition-all duration-500 ${activeProject ? 'opacity-100 pointer-events-auto' : 'opacity-0 pointer-events-none'}`}
       >
         {/* Backdrop */}
-        <div 
+        <div
           className="absolute inset-0 bg-background/80 backdrop-blur-sm cursor-pointer"
           onClick={() => setActiveProject(null)}
         />
-        
+
         {/* Panel */}
-        <div 
+        <div
           className={`relative w-full md:w-[850px] h-full bg-foreground text-background shadow-2xl p-8 md:p-16 flex flex-col overflow-y-auto transition-transform duration-500 ease-out transform ${activeProject ? 'translate-x-0' : 'translate-x-full'}`}
         >
-          <button 
+          <button
             onClick={() => setActiveProject(null)}
             className="absolute top-8 right-8 p-4 hover:opacity-70 transition-opacity"
           >
@@ -294,8 +384,24 @@ function Projects() {
             <div className="mt-16 animate-up pb-16">
               <div className="text-sm uppercase tracking-widest opacity-70 mb-8 border-b border-background/20 pb-4">{activeProject.tag}</div>
               <h2 className="text-4xl md:text-5xl font-black tracking-tighter leading-tight mb-8">{activeProject.title}</h2>
-              <p className="text-xl opacity-80 leading-relaxed mb-12">{activeProject.excerpt}</p>
-              
+              <p className="text-xl opacity-80 leading-relaxed mb-8">{activeProject.excerpt}</p>
+
+              {/* Links Placeholders */}
+              <div className="flex flex-wrap items-center gap-4 mb-12">
+                {activeProject.liveLink && (
+                  <a href={activeProject.liveLink} target="_blank" rel="noreferrer" className="flex items-center gap-3 px-6 py-3 bg-background text-foreground rounded-full text-sm font-bold uppercase tracking-widest hover:opacity-80 transition-opacity">
+                    <ExternalLink size={18} />
+                    Live Preview
+                  </a>
+                )}
+                {activeProject.githubLink && (
+                  <a href={activeProject.githubLink} target="_blank" rel="noreferrer" className="flex items-center gap-3 px-6 py-3 bg-transparent border border-background/30 text-background rounded-full text-sm font-bold uppercase tracking-widest hover:border-background transition-colors">
+                    <Github size={18} />
+                    Source Code
+                  </a>
+                )}
+              </div>
+
               {/* If rich fullSpecs exist */}
               {activeProject.fullSpecs ? (
                 <div className="flex flex-col gap-10">
@@ -309,7 +415,7 @@ function Projects() {
                   {activeProject.fullSpecs.keyFindings && (
                     <div className="flex flex-col gap-8 bg-background/5 p-6 rounded-lg border border-background/10">
                       <h3 className="text-sm font-bold uppercase tracking-widest opacity-50">📊 Key Findings</h3>
-                      
+
                       <div className="grid grid-cols-2 md:grid-cols-4 gap-6">
                         {activeProject.fullSpecs.keyFindings.metrics.map((m: any, i: number) => (
                           <div key={i} className="flex flex-col gap-1">
@@ -319,28 +425,42 @@ function Projects() {
                         ))}
                       </div>
 
-                      <div className="overflow-x-auto">
-                        <table className="w-full text-left text-sm">
-                          <thead>
-                            <tr className="border-b border-background/20 opacity-70">
-                              <th className="pb-3 font-semibold uppercase tracking-widest">Funnel Stage</th>
-                              <th className="pb-3 font-semibold uppercase tracking-widest">Sessions Lost</th>
-                              <th className="pb-3 font-semibold uppercase tracking-widest">Revenue Impact</th>
-                              <th className="pb-3 font-semibold uppercase tracking-widest">Priority</th>
-                            </tr>
-                          </thead>
-                          <tbody>
-                            {activeProject.fullSpecs.keyFindings.table.map((row: any, i: number) => (
-                              <tr key={i} className="border-b border-background/10">
-                                <td className="py-4">{row.stage}</td>
-                                <td className="py-4 font-mono">{row.lost}</td>
-                                <td className="py-4 font-mono">{row.impact}</td>
-                                <td className="py-4">{row.priority}</td>
+                      {activeProject.fullSpecs.keyFindings.insightsList && (
+                        <div className="flex flex-col gap-8 my-4">
+                          {activeProject.fullSpecs.keyFindings.insightsList.map((insight: any, i: number) => (
+                            <div key={i} className="flex flex-col gap-2 p-4 bg-background/5 border border-background/10 rounded-lg">
+                              <h4 className="text-lg md:text-xl font-bold tracking-tight mb-2 text-balance">{insight.title}</h4>
+                              <p className="text-sm md:text-base opacity-80 leading-relaxed"><span className="font-semibold uppercase tracking-widest text-xs opacity-60 mr-2">Finding:</span> {insight.finding}</p>
+                              <p className="text-sm md:text-base opacity-80 leading-relaxed"><span className="font-semibold uppercase tracking-widest text-xs opacity-60 mr-2">Impact:</span> {insight.impact}</p>
+                              <p className="text-sm md:text-base opacity-90 leading-relaxed mt-2"><span className="font-semibold uppercase tracking-widest text-xs mr-2">💡 Implication:</span> {insight.implication}</p>
+                            </div>
+                          ))}
+                        </div>
+                      )}
+
+                      {activeProject.fullSpecs.keyFindings.table && (
+                        <div className="overflow-x-auto">
+                          <table className="w-full text-left text-sm">
+                            <thead>
+                              <tr className="border-b border-background/20 opacity-70">
+                                {(activeProject.fullSpecs.keyFindings.tableHeaders || ["Funnel Stage", "Sessions Lost", "Revenue Impact", "Priority"]).map((header: string, idx: number) => (
+                                  <th key={idx} className="pb-3 font-semibold uppercase tracking-widest whitespace-nowrap pr-4">{header}</th>
+                                ))}
                               </tr>
-                            ))}
-                          </tbody>
-                        </table>
-                      </div>
+                            </thead>
+                            <tbody>
+                              {activeProject.fullSpecs.keyFindings.table.map((row: any, i: number) => (
+                                <tr key={i} className="border-b border-background/10">
+                                  <td className="py-4 pr-4">{row.stage}</td>
+                                  <td className="py-4 pr-4 font-mono">{row.lost}</td>
+                                  <td className="py-4 pr-4 font-mono">{row.impact}</td>
+                                  <td className="py-4 pr-4">{row.priority}</td>
+                                </tr>
+                              ))}
+                            </tbody>
+                          </table>
+                        </div>
+                      )}
 
                       <div className="flex flex-col gap-4 mt-2">
                         <p className="text-base leading-relaxed opacity-90">{activeProject.fullSpecs.keyFindings.insight}</p>
@@ -378,7 +498,7 @@ function Projects() {
                   <>
                     <h3 className="text-sm font-bold uppercase tracking-widest mb-6 border-b border-background/20 pb-4">Technical Specifications</h3>
                     <ul className="list-disc pl-6 flex flex-col gap-4 text-lg opacity-80">
-                      {activeProject.details.map((detail, idx) => (
+                      {activeProject.details.map((detail: string, idx: number) => (
                         <li key={idx} className="leading-relaxed">{detail}</li>
                       ))}
                     </ul>
