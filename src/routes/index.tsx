@@ -3,13 +3,82 @@ import { useEffect, useRef } from "react";
 import gsap from "gsap";
 import { ScrollTrigger } from "gsap/ScrollTrigger";
 import portrait from "@/assets/jamiel-portrait.png";
+import revealPortrait from "@/assets/jamiel-j-reveal.png";
 import { ArrowRight } from "lucide-react";
+import HeroFluid from "@/components/HeroFluid";
 
 gsap.registerPlugin(ScrollTrigger);
 
 export const Route = createFileRoute("/")({
   component: Home,
 });
+
+function HeroContent({ isMask = false }: { isMask?: boolean }) {
+  const imgSrc = isMask ? revealPortrait : portrait;
+  const imgClass = isMask 
+    ? "w-full h-auto object-contain transition-all duration-700"
+    : "w-full h-auto object-contain grayscale transition-all duration-700";
+
+  return (
+    <>
+      {/* Top Left */}
+      <div className="absolute top-24 left-8 md:top-32 md:left-12 text-sm tracking-widest uppercase animate-up z-20 text-foreground">
+        Data Analyst
+      </div>
+
+      {/* Top Right */}
+      <div className="absolute top-24 right-8 md:top-32 md:right-12 animate-up z-20 text-foreground">
+        <ArrowRight size={24} strokeWidth={1} className="hidden md:block" />
+      </div>
+
+      {/* OVERLAYS */}
+      <div className="pointer-events-none absolute inset-0 editorial-grid opacity-10 dark:opacity-20 z-0" />
+      <div className="pointer-events-none absolute inset-0 spotlight z-0" />
+
+      {/* The Text behind */}
+      <div className="absolute inset-0 flex items-center justify-center z-0 select-none overflow-hidden">
+        <h1
+          className="text-[16vw] md:text-[17vw] uppercase leading-none animate-up text-foreground whitespace-nowrap transition-colors duration-500 font-bold"
+          style={{ letterSpacing: "0em", transform: "scaleY(1.15)" }}
+        >
+          PORTFOLIO
+        </h1>
+      </div>
+
+      {/* The Image (Zoomed in) */}
+      <div className="relative z-10 w-full max-w-[280px] sm:max-w-[320px] md:max-w-[500px] mx-auto flex justify-center items-end animate-up mt-[15vh] pointer-events-none">
+        <img
+          src={imgSrc}
+          alt="Jamiel"
+          className={imgClass}
+        />
+      </div>
+
+      {/* The Text in front (Stroke only overlay) */}
+      <div className="absolute inset-0 flex items-center justify-center z-20 pointer-events-none select-none overflow-hidden mix-blend-overlay">
+        <h1
+          className="text-[16vw] md:text-[17vw] uppercase leading-none animate-up text-transparent whitespace-nowrap transition-colors duration-500 font-bold"
+          style={{ letterSpacing: "0em", transform: "scaleY(1.15)" }}
+        >
+          <span className="text-white text-transparent" style={{ WebkitTextFillColor: "transparent", WebkitTextStroke: "1.5px #fff" }}>PORTFOLIO</span>
+        </h1>
+      </div>
+
+      {/* Bottom Left */}
+      <div className="absolute bottom-8 left-8 md:bottom-12 md:left-12 text-sm tracking-widest animate-up z-20 text-foreground">
+        Jamiel J
+      </div>
+
+      {/* Bottom Right */}
+      <Link
+        to="/projects"
+        className="absolute bottom-8 right-8 md:bottom-12 md:right-12 text-sm tracking-widest lowercase animate-up z-20 text-foreground hover:opacity-70 transition-opacity"
+      >
+        view.projects
+      </Link>
+    </>
+  );
+}
 
 function Home() {
   const scrollWrapRef = useRef<HTMLDivElement>(null);
@@ -72,69 +141,27 @@ function Home() {
       );
     });
 
-    return () => ctx.revert();
+    return () => {
+      ctx.revert();
+    };
   }, []);
 
   return (
     <div className="min-h-screen">
-      {/* HERO */}
-      <section className="relative min-h-[100dvh] bg-background overflow-hidden flex items-center justify-center font-sans transition-colors duration-500">
-
-        {/* Top Left */}
-        <div className="absolute top-24 left-8 md:top-32 md:left-12 text-sm tracking-widest uppercase animate-up z-20 text-foreground">
-          Data Analyst
-        </div>
-
-        {/* Top Right */}
-        <div className="absolute top-24 right-8 md:top-32 md:right-12 animate-up z-20 text-foreground">
-          <ArrowRight size={24} strokeWidth={1} className="hidden md:block" />
-        </div>
-
-        {/* OVERLAYS */}
-        <div className="pointer-events-none absolute inset-0 editorial-grid opacity-10 dark:opacity-20 z-0" />
-        <div className="pointer-events-none absolute inset-0 spotlight z-0" />
-
-        {/* The Text behind */}
-        <div className="absolute inset-0 flex items-center justify-center z-0 select-none overflow-hidden">
-          <h1
-            className="text-[16vw] md:text-[17vw] uppercase leading-none animate-up text-foreground whitespace-nowrap transition-colors duration-500 font-bold"
-            style={{ letterSpacing: "0em", transform: "scaleY(1.15)" }}
-          >
-            PORTFOLIO
-          </h1>
-        </div>
-
-        {/* The Image (Zoomed in) */}
-        <div className="relative z-10 w-full max-w-[280px] sm:max-w-[320px] md:max-w-[500px] mx-auto flex justify-center items-end animate-up mt-[15vh] pointer-events-none">
-          <img
-            src={portrait}
-            alt="Jamiel"
-            className="w-full h-auto object-contain grayscale hover:grayscale-0 transition-all duration-700 mix-blend-multiply dark:mix-blend-lighten"
-          />
-        </div>
-
-        {/* The Text in front (Stroke only overlay) */}
-        <div className="absolute inset-0 flex items-center justify-center z-20 pointer-events-none select-none overflow-hidden mix-blend-overlay">
-          <h1
-            className="text-[16vw] md:text-[17vw] uppercase leading-none animate-up text-transparent whitespace-nowrap transition-colors duration-500 font-bold"
-            style={{ letterSpacing: "0em", transform: "scaleY(1.15)" }}
-          >
-            <span className="text-white text-transparent" style={{ WebkitTextFillColor: "transparent", WebkitTextStroke: "1.5px #fff" }}>PORTFOLIO</span>
-          </h1>
-        </div>
-
-        {/* Bottom Left */}
-        <div className="absolute bottom-8 left-8 md:bottom-12 md:left-12 text-sm tracking-widest animate-up z-20 text-foreground">
-          Jamiel J
-        </div>
-
-        {/* Bottom Right */}
-        <Link
-          to="/projects"
-          className="absolute bottom-8 right-8 md:bottom-12 md:right-12 text-sm tracking-widest lowercase animate-up z-20 text-foreground hover:opacity-70 transition-opacity"
-        >
-          view.projects
-        </Link>
+      {/* HERO WITH WEBGL FLUID MASK */}
+      <section className="hero-container relative overflow-hidden font-sans cursor-default">
+        <HeroFluid 
+          childrenBase={
+            <div className="absolute inset-0 bg-background text-foreground flex items-center justify-center">
+              <HeroContent isMask={false} />
+            </div>
+          }
+          childrenReveal={
+            <div className="theme-inverse absolute inset-0 bg-background text-foreground flex items-center justify-center">
+              <HeroContent isMask={true} />
+            </div>
+          }
+        />
       </section>
 
       {/* MARQUEE */}
