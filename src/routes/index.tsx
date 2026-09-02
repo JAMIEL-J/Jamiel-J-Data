@@ -2,6 +2,7 @@ import { createFileRoute, Link } from "@tanstack/react-router";
 import { useEffect, useRef } from "react";
 import gsap from "gsap";
 import { ScrollTrigger } from "gsap/ScrollTrigger";
+import Lenis from "lenis";
 import portrait from "@/assets/jamiel-portrait.png";
 import revealPortrait from "@/assets/jamiel-j-reveal.png";
 import { ArrowRight } from "lucide-react";
@@ -86,63 +87,126 @@ function Home() {
 
   useEffect(() => {
     const prefersReduced = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
-    if (prefersReduced) return;
+    const isTouch = window.matchMedia("(pointer: coarse)").matches;
+    const isMobile = window.innerWidth < 768;
 
-    const ctx = gsap.context(() => {
-      // Hero Entrance
-      gsap.fromTo(
-        ".animate-up",
-        { y: 60, opacity: 0 },
-        { y: 0, opacity: 1, duration: 1, stagger: 0.1, ease: "power3.out", delay: 0.1 }
-      );
+    // Lenis: autoRaf OFF — we drive it from GSAP ticker once (fixes double-RAF lag).
+    // Faster lerp (0.12) = less perceived lag hero->down. Touch gets native feel.
+    const lenis = new Lenis({
+      autoRaf: false,
+      duration: 0.85,
+      easing: (t: number) => 1 - Math.pow(1 - t, 3),
+      lerp: isMobile || isTouch ? 0.14 : 0.11,
+      smoothWheel: true,
+      syncTouch: false,
+      gestureOrientation: "vertical",
+      touchMultiplier: 1.15,
+    });
+    lenis.on("scroll", ScrollTrigger.update);
 
-      // Kinetic Marquee (Scrolling text)
-      gsap.to(".marquee-inner", {
-        xPercent: -50,
-        ease: "none",
-        scrollTrigger: {
-          trigger: ".marquee-section",
-          start: "top bottom",
-          end: "bottom top",
-          scrub: 1,
+    let rafId = 0;
+    const ticker = (time: number) => lenis.raf(time * 1000);
+    if (!prefersReduced) {
+      gsap.ticker.add(ticker);
+      gsap.ticker.lagSmoothing(0);
+    } else {
+      const loop = (t: number) => {
+        lenis.raf(t);
+        rafId = requestAnimationFrame(loop);
+      };
+      rafId = requestAnimationFrame(loop);
+      return () => {
+        cancelAnimationFrame(rafId);
+        lenis.destroy();
+      };
+    }
+
+    let ctx: gsap.Context | null = null;
+    let refreshTimeout: number | null = null;
+
+    const initGsap = () => {
+      ctx = gsap.context(() => {
+        // Hero Entrance
+        gsap.fromTo(
+          ".animate-up",
+          { y: 60, opacity: 0 },
+          { y: 0, opacity: 1, duration: 1, stagger: 0.1, ease: "power3.out", delay: 0.1 }
+        );
+
+        // Kinetic Marquee — scrub-free loop (scrub:1 was fighting Lenis and breaking scroll)
+        const marquee = document.querySelector<HTMLElement>(".marquee-inner");
+        if (marquee) {
+          gsap.to(marquee, {
+            xPercent: -50,
+            duration: 22,
+            ease: "none",
+            repeat: -1,
+          });
         }
+
+        // Methodology cardless slight zoom reveal — will-change + once:true to avoid repaint thrash
+        gsap.utils.toArray<HTMLElement>(".seq-alt").forEach((el) => {
+          el.style.willChange = "transform, opacity";
+          gsap.fromTo(
+            el,
+            { y: 14, opacity: 0, scale: 0.988 },
+            {
+              y: 0,
+              opacity: 1,
+              scale: 1,
+              duration: 0.5,
+              ease: "power2.out",
+              scrollTrigger: {
+                trigger: el,
+                start: "top 88%",
+                once: true,
+              },
+              onComplete: () => {
+                el.style.willChange = "auto";
+              },
+            }
+          );
+        });
+
+        // Impact pillars — pin only, no scrub scale (scrub+pin = jank hero->down). Use pure CSS sticky.
+        gsap.utils.toArray<HTMLElement>(".pillar-card").forEach((el) => {
+          gsap.fromTo(
+            el,
+            { y: 16, opacity: 0 },
+            {
+              y: 0,
+              opacity: 1,
+              duration: 0.5,
+              ease: "power2.out",
+              scrollTrigger: {
+                trigger: el,
+                start: "top 82%",
+                once: true,
+              },
+            }
+          );
+        });
       });
 
-      // Glass Section Reveal
-      gsap.fromTo(
-        ".glass-reveal",
-        { y: 40, opacity: 0 },
-        {
-          y: 0,
-          opacity: 1,
-          duration: 1.2,
-          ease: "power3.out",
-          scrollTrigger: {
-            trigger: ".glass-section",
-            start: "top 75%",
-          }
-        }
-      );
+      // Critical: refresh after layout settles — fixes initial-not-animating but animates after nav
+      requestAnimationFrame(() => ScrollTrigger.refresh());
+      // Extra refresh after fonts/images settle (initial load vs TanStack client nav)
+      refreshTimeout = window.setTimeout(() => ScrollTrigger.refresh(), 250) as unknown as number;
+      if (document.fonts?.ready) {
+        document.fonts.ready.then(() => ScrollTrigger.refresh());
+      }
+    };
 
-      gsap.fromTo(
-        ".glass-card",
-        { y: 80, opacity: 0 },
-        {
-          y: 0,
-          opacity: 1,
-          duration: 1,
-          stagger: 0.2,
-          ease: "power3.out",
-          scrollTrigger: {
-            trigger: ".glass-cards-container",
-            start: "top 80%",
-          }
-        }
-      );
-    });
+    // Defer one frame so DOM is painted before measuring (fixes SSR -> client mismatch)
+    const rafStart = requestAnimationFrame(initGsap);
 
     return () => {
-      ctx.revert();
+      cancelAnimationFrame(rafStart);
+      if (refreshTimeout) clearTimeout(refreshTimeout);
+      if (ctx) ctx.revert();
+      gsap.ticker.remove(ticker);
+      lenis.destroy();
+      ScrollTrigger.getAll().forEach((t) => t.kill());
     };
   }, []);
 
@@ -200,45 +264,57 @@ function Home() {
           </div>
         </div>
 
-        {/* Centered Liquid Glass Layout */}
-        <div className="glass-section relative w-full mt-16 md:mt-32 md:mb-24 text-foreground flex flex-col items-center px-6 md:px-12">
-          
-          {/* Background shapes to make the glass refraction visible */}
-          <div className="absolute top-[20%] left-[10%] md:left-[20%] w-[80vw] max-w-[500px] h-[80vw] max-h-[500px] bg-foreground/[0.08] blur-[80px] md:blur-[120px] rounded-full pointer-events-none z-0"></div>
-          <div className="absolute top-[50%] right-[5%] md:right-[10%] w-[70vw] max-w-[400px] h-[70vw] max-h-[400px] bg-foreground/[0.05] blur-[60px] md:blur-[100px] rounded-full pointer-events-none z-0"></div>
+        {/* Statement — same analyst system, centered + reduced */}
+        <div className="max-w-[1000px] mx-auto text-center mt-8 md:mt-10">
+          <h3 className="text-[1.7rem] md:text-[2.6rem] lg:text-[3.4rem] font-black leading-[0.9] tracking-tighter uppercase text-center">
+            I find where the money is leaking, <span className="text-foreground/30">forecast where it is going, and tell you which customers actually matter.</span>
+          </h3>
+        </div>
 
-          {/* Main Statement (Centered) */}
-          <div className="glass-reveal relative z-10 max-w-5xl mx-auto text-center mb-12 md:mb-16">
-            <h3 className="text-3xl md:text-6xl lg:text-[4.25rem] font-medium leading-[1.1] tracking-tight">
-              I find where the money's leaking, forecast where it's going,<br className="hidden md:block" /> and tell you which customers actually matter.
-            </h3>
+        {/* Methodology — cardless, alternating sides, centered hairline, slight zoom on scroll */}
+        <div className="relative w-full max-w-[1000px] mx-auto mt-12 md:mt-20">
+          <div className="flex items-center justify-center gap-3 mb-10">
+            <div className="h-px w-10 bg-foreground/10"></div>
+            <span className="text-xs font-semibold uppercase tracking-widest opacity-40">Methodology</span>
+            <div className="h-px w-10 bg-foreground/10"></div>
           </div>
 
-          {/* Apple-style Liquid Glass Flow Card */}
-          <div className="glass-card relative z-10 w-full max-w-4xl p-6 md:p-12 lg:p-16 rounded-[2rem] md:rounded-[3rem] bg-white/40 dark:bg-black/40 backdrop-blur-[50px] border border-black/5 dark:border-white/10 shadow-[0_24px_48px_rgba(0,0,0,0.1)] dark:shadow-[0_24px_48px_rgba(0,0,0,0.4)] overflow-hidden ring-1 ring-inset ring-white/60 dark:ring-white/10">
-             
-             {/* Apple-style inner highlight / liquid reflection */}
-             <div className="absolute inset-0 bg-gradient-to-br from-white/40 to-transparent dark:from-white/10 opacity-50 pointer-events-none mix-blend-overlay"></div>
-             <div className="absolute inset-x-0 top-0 h-px bg-gradient-to-r from-transparent via-white/50 to-transparent dark:via-white/20 pointer-events-none"></div>
-             
-             <div className="relative z-10 flex flex-col gap-8 text-center">
-               <div className="flex items-center justify-center gap-4 text-xs font-semibold uppercase tracking-widest opacity-50 mb-2">
-                 <div className="h-px bg-foreground/20 w-8 md:w-16"></div>
-                 <span>Methodology</span>
-                 <div className="h-px bg-foreground/20 w-8 md:w-16"></div>
-               </div>
-               
-               <p className="text-xl md:text-2xl lg:text-[1.75rem] font-normal opacity-90 leading-[1.4] tracking-tight max-w-3xl mx-auto">
-                 The workflow starts by stripping away the noise with <span className="font-bold">SQL and statistical reasoning</span> to definitively answer why a metric moved.
-               </p>
-               <p className="text-xl md:text-2xl lg:text-[1.75rem] font-normal opacity-90 leading-[1.4] tracking-tight max-w-3xl mx-auto">
-                 That raw insight is translated into clear <span className="font-bold">Power BI and Streamlit</span> dashboards engineered for stakeholders who won't read a dense report. 
-               </p>
-               <p className="text-xl md:text-2xl lg:text-[1.75rem] font-normal opacity-90 leading-[1.4] tracking-tight max-w-3xl mx-auto">
-                 And when the problem requires a tool that doesn't exist yet, <span className="font-bold">I build it from scratch</span>—full-stack, if that's what it takes to stop the leak.
-               </p>
-             </div>
+          <div className="relative px-2 md:px-0">
+            <div className="hidden md:block absolute left-1/2 top-2 bottom-2 w-px bg-foreground/10 -translate-x-1/2"></div>
+            <div className="md:hidden absolute left-[15px] top-2 bottom-2 w-px bg-foreground/10"></div>
 
+            <div className="seq-alt grid md:grid-cols-2 gap-0 items-start pb-12">
+              <div className="md:pr-10 md:text-right order-2 md:order-1">
+                <h4 className="text-[15px] md:text-[16px] font-black tracking-tight uppercase leading-none">Strip the noise</h4>
+                <p className="text-[10px] tracking-[0.14em] uppercase opacity-40 mt-1">SQL · Statistical reasoning · BigQuery</p>
+                <p className="text-sm leading-[1.6] opacity-60 mt-3">Remove vanity deltas. Use SQL and statistical reasoning to answer why a metric moved, not just that it did.</p>
+              </div>
+              <div className="relative md:pl-10 order-1 md:order-2 flex md:block gap-4">
+                <div className="md:absolute md:left-0 md:top-0 md:-translate-x-1/2 w-8 h-8 md:w-9 md:h-9 rounded-full bg-foreground text-background grid place-items-center text-[11px] font-medium shrink-0">01</div>
+              </div>
+            </div>
+
+            <div className="seq-alt grid md:grid-cols-2 gap-0 items-start pb-12">
+              <div className="relative md:pr-10 order-1 flex md:justify-end">
+                <div className="md:absolute md:right-0 md:top-0 md:translate-x-1/2 w-8 h-8 md:w-9 md:h-9 rounded-full bg-card border border-foreground/10 grid place-items-center text-[11px] font-medium shrink-0">02</div>
+              </div>
+              <div className="md:pl-10 text-left order-2">
+                <h4 className="text-[15px] md:text-[16px] font-black tracking-tight uppercase leading-none">Translate to decisions</h4>
+                <p className="text-[10px] tracking-[0.14em] uppercase opacity-40 mt-1">Power BI · Streamlit</p>
+                <p className="text-sm leading-[1.6] opacity-60 mt-3">Raw insight into a dashboard stakeholders will actually open. One view that decides, not a deck that explains.</p>
+              </div>
+            </div>
+
+            <div className="seq-alt grid md:grid-cols-2 gap-0 items-start">
+              <div className="md:pr-10 md:text-right order-2 md:order-1">
+                <h4 className="text-[15px] md:text-[16px] font-black tracking-tight uppercase leading-none">Build what does not exist</h4>
+                <p className="text-[10px] tracking-[0.14em] uppercase opacity-40 mt-1">Full stack · Shipped</p>
+                <p className="text-sm leading-[1.6] opacity-60 mt-3">When the tool does not exist, build it end to end. Stop the leak at the source.</p>
+              </div>
+              <div className="relative md:pl-10 order-1 md:order-2">
+                <div className="md:absolute md:left-0 md:top-0 md:-translate-x-1/2 w-8 h-8 md:w-9 md:h-9 rounded-full bg-card border border-foreground/10 grid place-items-center text-[11px] font-medium shrink-0">03</div>
+              </div>
+            </div>
           </div>
         </div>
       </section>
@@ -247,7 +323,7 @@ function Home() {
       <section className="py-24 md:py-48 px-6 md:px-12 max-w-[1200px] mx-auto flex flex-col gap-12 relative pb-[50vh]">
 
         {/* PILLAR 1: DATA */}
-        <div className="sticky top-[5vh] md:top-[12vh] w-full bg-foreground text-background rounded-3xl p-6 md:p-10 shadow-2xl flex flex-col md:flex-row gap-8 items-center z-10 transition-transform">
+        <div className="pillar-card sticky top-[5vh] md:top-[12vh] w-full bg-foreground text-background rounded-3xl p-6 md:p-10 shadow-2xl flex flex-col md:flex-row gap-8 items-center z-10">
           <div className="md:w-1/2 flex flex-col gap-4">
             <div className="text-sm font-bold uppercase tracking-widest opacity-70 border-b border-background/20 pb-4">01 // Data Engineering</div>
             <h2 className="text-[10vw] md:text-[5vw] font-black leading-[0.85] tracking-tighter uppercase mt-2">Revenue<br />Leakage</h2>
@@ -270,7 +346,7 @@ function Home() {
         </div>
 
         {/* PILLAR 2: AI */}
-        <div className="sticky top-[7vh] md:top-[16vh] w-full bg-zinc-900 text-white rounded-3xl p-6 md:p-10 shadow-2xl flex flex-col md:flex-row-reverse gap-8 items-center z-20 transition-transform border border-white/10">
+        <div className="pillar-card sticky top-[7vh] md:top-[16vh] w-full bg-zinc-900 text-white rounded-3xl p-6 md:p-10 shadow-2xl flex flex-col md:flex-row-reverse gap-8 items-center z-20 border border-white/10">
           <div className="md:w-1/2 flex flex-col gap-4">
             <div className="text-sm font-bold uppercase tracking-widest opacity-70 border-b border-white/20 pb-4">02 // Artificial Intelligence</div>
             <h2 className="text-[10vw] md:text-[5vw] font-black leading-[0.85] tracking-tighter uppercase mt-2">Vizzy<br />Pilot</h2>
@@ -293,7 +369,7 @@ function Home() {
         </div>
 
         {/* PILLAR 3: ANALYSIS */}
-        <div className="sticky top-[9vh] md:top-[20vh] w-full bg-background text-foreground rounded-3xl p-6 md:p-10 shadow-2xl flex flex-col md:flex-row gap-8 items-center z-30 transition-transform border border-foreground/10">
+        <div className="pillar-card sticky top-[9vh] md:top-[20vh] w-full bg-background text-foreground rounded-3xl p-6 md:p-10 shadow-2xl flex flex-col md:flex-row gap-8 items-center z-30 border border-foreground/10">
           <div className="md:w-1/2 flex flex-col gap-4">
             <div className="text-sm font-bold uppercase tracking-widest opacity-70 border-b border-foreground/20 pb-4">03 // Predictive Analytics</div>
             <h2 className="text-[10vw] md:text-[5vw] font-black leading-[0.85] tracking-tighter uppercase mt-2">Churn<br />Prediction</h2>

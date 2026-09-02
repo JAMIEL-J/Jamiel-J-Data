@@ -17,43 +17,63 @@ export default function HeroFluid({ childrenBase, childrenReveal }: HeroFluidPro
       // Dynamic import to avoid SSR issues if used in Next.js
       const webGLFluid = (await import("webgl-fluid")).default;
       
+      const isMobile = window.innerWidth < 768;
       if (webglCanvasRef.current) {
         webGLFluid(webglCanvasRef.current, {
           IMMEDIATE: true,
           TRIGGER: "hover",
-          SIM_RESOLUTION: 256, // Lower sim res + blur = better gooey effect
-          DYE_RESOLUTION: 1024,
-          DENSITY_DISSIPATION: 0.96, // Fades naturally, leaving a nice liquid trail
-          VELOCITY_DISSIPATION: 0.5, // Stops quickly, ensuring it follows the cursor ONLY and doesn't shoot off
-          PRESSURE: 0.8,
-          CURL: 5, // Minimal curl so it doesn't drift away from the cursor
-          SPLAT_RADIUS: 0.10, // Balanced radius
-          SPLAT_FORCE: 8000, 
-          SPLAT_COUNT: 0, // Disables the random liquid splash on initial load
-          COLORFUL: true, // We filter to grayscale in CSS
-          BLOOM: false, // Disables the white vignette/halo at the edges
-          SUNRAYS: false, // Disables light rays
+          SIM_RESOLUTION: isMobile ? 128 : 192,
+          DYE_RESOLUTION: isMobile ? 512 : 768,
+          DENSITY_DISSIPATION: 0.97,
+          VELOCITY_DISSIPATION: 0.6,
+          PRESSURE: 0.7,
+          CURL: 3,
+          SPLAT_RADIUS: 0.10,
+          SPLAT_FORCE: 6000, 
+          SPLAT_COUNT: 0,
+          COLORFUL: true,
+          BLOOM: false,
+          SUNRAYS: false,
         });
       }
 
       // Render loop to copy WebGL output to the two 2D knockout canvases
       const renderLoop = () => {
         const source = webglCanvasRef.current;
-        const baseCtx = canvasBaseRef.current?.getContext("2d", { willReadFrequently: false });
-        const revealCtx = canvasRevealRef.current?.getContext("2d", { willReadFrequently: false });
+        if (!source || source.clientWidth === 0 || source.clientHeight === 0 || source.width === 0 || source.height === 0) {
+          animationFrameId = requestAnimationFrame(renderLoop);
+          return;
+        }
+        const baseCanvas = canvasBaseRef.current;
+        const revealCanvas = canvasRevealRef.current;
+        if (!baseCanvas || !revealCanvas) {
+          animationFrameId = requestAnimationFrame(renderLoop);
+          return;
+        }
+        const baseCtx = baseCanvas.getContext("2d");
+        const revealCtx = revealCanvas.getContext("2d");
+        if (!baseCtx || !revealCtx) {
+          animationFrameId = requestAnimationFrame(renderLoop);
+          return;
+        }
 
-        if (source && baseCtx && revealCtx && canvasBaseRef.current && canvasRevealRef.current) {
-          // Sync dimensions
-          if (canvasBaseRef.current.width !== source.clientWidth) {
-            canvasBaseRef.current.width = source.clientWidth;
-            canvasBaseRef.current.height = source.clientHeight;
-            canvasRevealRef.current.width = source.clientWidth;
-            canvasRevealRef.current.height = source.clientHeight;
+        // Sync dimensions only when valid
+        if (baseCanvas.width !== source.clientWidth || baseCanvas.height !== source.clientHeight) {
+          const w = source.clientWidth;
+          const h = source.clientHeight;
+          if (w > 0 && h > 0) {
+            baseCanvas.width = w;
+            baseCanvas.height = h;
+            revealCanvas.width = w;
+            revealCanvas.height = h;
           }
+        }
 
-          // Draw from WebGL canvas to 2D canvases
-          baseCtx.drawImage(source, 0, 0, canvasBaseRef.current.width, canvasBaseRef.current.height);
-          revealCtx.drawImage(source, 0, 0, canvasRevealRef.current.width, canvasRevealRef.current.height);
+        if (baseCanvas.width > 0 && baseCanvas.height > 0) {
+          try {
+            baseCtx.drawImage(source, 0, 0, baseCanvas.width, baseCanvas.height);
+            revealCtx.drawImage(source, 0, 0, revealCanvas.width, revealCanvas.height);
+          } catch {}
         }
 
         animationFrameId = requestAnimationFrame(renderLoop);
