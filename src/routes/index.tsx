@@ -1,5 +1,5 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
-import { useEffect, useRef } from "react";
+import { Fragment, useEffect, useRef } from "react";
 import gsap from "gsap";
 import { ScrollTrigger } from "gsap/ScrollTrigger";
 import Lenis from "lenis";
@@ -9,6 +9,23 @@ import { ArrowRight } from "lucide-react";
 import HeroFluid from "@/components/HeroFluid";
 
 gsap.registerPlugin(ScrollTrigger);
+
+/** One masked word — raw text inside, so tracking/leading match the original exactly. */
+function TwWords({ text }: { text: string }) {
+  const words = text.trim().split(/\s+/);
+  return (
+    <>
+      {words.map((w, wi) => (
+        <Fragment key={wi}>
+          <span className="tw-mask">
+            <span className="tw-word">{w}</span>
+          </span>
+          {wi < words.length - 1 ? " " : null}
+        </Fragment>
+      ))}
+    </>
+  );
+}
 
 export const Route = createFileRoute("/")({
   component: Home,
@@ -90,17 +107,16 @@ function Home() {
     const isTouch = window.matchMedia("(pointer: coarse)").matches;
     const isMobile = window.innerWidth < 768;
 
-    // Lenis: autoRaf OFF — we drive it from GSAP ticker once (fixes double-RAF lag).
-    // Faster lerp (0.12) = less perceived lag hero->down. Touch gets native feel.
+    // Lenis: snappier (higher lerp = less float lag). Driven once via GSAP ticker.
     const lenis = new Lenis({
       autoRaf: false,
-      duration: 0.85,
+      duration: 0.7,
       easing: (t: number) => 1 - Math.pow(1 - t, 3),
-      lerp: isMobile || isTouch ? 0.14 : 0.11,
+      lerp: isMobile || isTouch ? 0.18 : 0.16,
       smoothWheel: true,
       syncTouch: false,
       gestureOrientation: "vertical",
-      touchMultiplier: 1.15,
+      touchMultiplier: 1.0,
     });
     lenis.on("scroll", ScrollTrigger.update);
 
@@ -144,6 +160,52 @@ function Home() {
           });
         }
 
+        // Jackpot word-reels — each word rolls up through its own mask, letters
+        // scrambling A–Z in place, then locks. Raw text inside, so type renders identical.
+        if (!prefersReduced) {
+          const twWords = gsap.utils.toArray<HTMLElement>(".tw-heading .tw-word");
+          if (twWords.length) {
+            const LETTERS = "ABCDEFGHIJKLMNOPQRSTUVWXYZ";
+            const scramble = (word: string) =>
+              Array.from(word, (ch) => {
+                if (ch >= "A" && ch <= "Z") return LETTERS[(Math.random() * 26) | 0];
+                if (ch >= "a" && ch <= "z") return LETTERS[(Math.random() * 26) | 0].toLowerCase();
+                return ch;
+              }).join("");
+            gsap.set(twWords, { yPercent: 110 });
+            ScrollTrigger.create({
+              trigger: ".tw-heading",
+              start: "top 80%",
+              once: true,
+              onEnter: () => {
+                twWords.forEach((el, i) => {
+                  const final = el.dataset.final ?? el.textContent ?? "";
+                  el.dataset.final = final;
+                  const spins = 3 + Math.floor(i / 3);
+                  const tl = gsap.timeline({ delay: i * 0.05 });
+                  tl.fromTo(
+                    el,
+                    { yPercent: 110 },
+                    {
+                      yPercent: -110,
+                      duration: 0.14,
+                      ease: "none",
+                      repeat: spins,
+                      onRepeat: () => {
+                        el.textContent = scramble(final);
+                      },
+                    }
+                  );
+                  tl.add(() => {
+                    el.textContent = final;
+                  });
+                  tl.fromTo(el, { yPercent: 110 }, { yPercent: 0, duration: 0.22, ease: "power3.out" });
+                });
+              },
+            });
+          }
+        }
+
         // Methodology cardless slight zoom reveal — will-change + once:true to avoid repaint thrash
         gsap.utils.toArray<HTMLElement>(".seq-alt").forEach((el) => {
           el.style.willChange = "transform, opacity";
@@ -168,24 +230,100 @@ function Home() {
           );
         });
 
-        // Impact pillars — pin only, no scrub scale (scrub+pin = jank hero->down). Use pure CSS sticky.
-        gsap.utils.toArray<HTMLElement>(".pillar-card").forEach((el) => {
+        // Fullscreen chapters — NO pin, NO scrub (pin+scrub fought Lenis = lag).
+        // Cheap pattern only: once reveals on transform/opacity, single progress scrub.
+        // Directional entrances: .ch-from-left slides in from left, .ch-from-right from right.
+        gsap.utils.toArray<HTMLElement>(".ch-from-left .ch-slide").forEach((el) => {
+          el.style.willChange = "transform, opacity";
           gsap.fromTo(
             el,
-            { y: 16, opacity: 0 },
+            { x: -90, opacity: 0 },
             {
-              y: 0,
+              x: 0,
               opacity: 1,
-              duration: 0.5,
-              ease: "power2.out",
-              scrollTrigger: {
-                trigger: el,
-                start: "top 82%",
-                once: true,
-              },
+              duration: 0.8,
+              ease: "power3.out",
+              overwrite: "auto",
+              scrollTrigger: { trigger: el, start: "top 80%", once: true },
+              onComplete: () => (el.style.willChange = "auto"),
             }
           );
         });
+        gsap.utils.toArray<HTMLElement>(".ch-from-right .ch-slide").forEach((el) => {
+          el.style.willChange = "transform, opacity";
+          gsap.fromTo(
+            el,
+            { x: 90, opacity: 0 },
+            {
+              x: 0,
+              opacity: 1,
+              duration: 0.8,
+              ease: "power3.out",
+              overwrite: "auto",
+              scrollTrigger: { trigger: el, start: "top 80%", once: true },
+              onComplete: () => (el.style.willChange = "auto"),
+            }
+          );
+        });
+        gsap.utils.toArray<HTMLElement>(".ch-lines").forEach((group) => {
+          const kids = Array.from(group.children);
+          kids.forEach((k) => ((k as HTMLElement).style.willChange = "transform, opacity"));
+          gsap.fromTo(
+            kids,
+            { y: 28, opacity: 0 },
+            {
+              y: 0,
+              opacity: 1,
+              duration: 0.6,
+              stagger: 0.08,
+              ease: "power2.out",
+              overwrite: "auto",
+              scrollTrigger: { trigger: group, start: "top 82%", once: true },
+              onComplete: () => kids.forEach((k) => ((k as HTMLElement).style.willChange = "auto")),
+            }
+          );
+        });
+        gsap.utils.toArray<HTMLElement>(".ch-proof").forEach((el) => {
+          el.style.willChange = "transform, opacity";
+          gsap.fromTo(
+            el,
+            { y: 20, opacity: 0 },
+            {
+              y: 0,
+              opacity: 1,
+              duration: 0.6,
+              ease: "power2.out",
+              overwrite: "auto",
+              scrollTrigger: { trigger: el, start: "top 88%", once: true },
+              onComplete: () => (el.style.willChange = "auto"),
+            }
+          );
+        });
+        gsap.utils.toArray<HTMLElement>(".ch-img").forEach((el) => {
+          gsap.fromTo(
+            el,
+            { scale: 1.08 },
+            {
+              scale: 1.02,
+              duration: 1.1,
+              ease: "power2.out",
+              overwrite: "auto",
+              scrollTrigger: { trigger: el, start: "top 90%", once: true },
+            }
+          );
+        });
+        const prog = document.querySelector<HTMLElement>(".ch-progress");
+        if (prog && !prefersReduced) {
+          gsap.fromTo(
+            prog,
+            { scaleX: 0 },
+            {
+              scaleX: 1,
+              ease: "none",
+              scrollTrigger: { trigger: ".ch-wrap", start: "top 75%", end: "bottom 70%", scrub: 0.3 },
+            }
+          );
+        }
       });
 
       // Critical: refresh after layout settles — fixes initial-not-animating but animates after nav
@@ -258,15 +396,18 @@ function Home() {
         {/* Massive asymmetric heading */}
         <div className="grid grid-cols-1 md:grid-cols-12 gap-12 mb-20 md:mb-32">
           <div className="md:col-span-11 md:col-start-2 lg:col-span-10 lg:col-start-2">
-            <h2 className="text-4xl md:text-7xl lg:text-[6.5rem] font-black leading-[0.9] tracking-tighter uppercase text-left">
-              Data Analyst who builds <span className="text-foreground/30">the dashboards nobody has to explain twice.</span>
+            <h2 className="tw-heading text-4xl md:text-7xl lg:text-[6.5rem] font-bold leading-[0.9] tracking-tighter uppercase text-left">
+              <TwWords text="Data Analyst who builds" />{" "}
+              <span className="text-foreground/30">
+                <TwWords text="the dashboards nobody has to explain twice." />
+              </span>
             </h2>
           </div>
         </div>
 
         {/* Statement — same analyst system, centered + reduced */}
         <div className="max-w-[1000px] mx-auto text-center mt-8 md:mt-10">
-          <h3 className="text-[1.7rem] md:text-[2.6rem] lg:text-[3.4rem] font-black leading-[0.9] tracking-tighter uppercase text-center">
+            <h3 className="text-[1.7rem] md:text-[2.6rem] lg:text-[3.4rem] font-bold leading-[0.9] tracking-tighter uppercase text-center">
             I find where the money is leaking, <span className="text-foreground/30">forecast where it is going, and tell you which customers actually matter.</span>
           </h3>
         </div>
@@ -285,7 +426,7 @@ function Home() {
 
             <div className="seq-alt grid md:grid-cols-2 gap-0 items-start pb-12">
               <div className="md:pr-10 md:text-right order-2 md:order-1">
-                <h4 className="text-[15px] md:text-[16px] font-black tracking-tight uppercase leading-none">Strip the noise</h4>
+                <h4 className="text-[15px] md:text-[16px] font-bold tracking-tight uppercase leading-none">Strip the noise</h4>
                 <p className="text-[10px] tracking-[0.14em] uppercase opacity-40 mt-1">SQL · Statistical reasoning · BigQuery</p>
                 <p className="text-sm leading-[1.6] opacity-60 mt-3">Remove vanity deltas. Use SQL and statistical reasoning to answer why a metric moved, not just that it did.</p>
               </div>
@@ -299,7 +440,7 @@ function Home() {
                 <div className="md:absolute md:right-0 md:top-0 md:translate-x-1/2 w-8 h-8 md:w-9 md:h-9 rounded-full bg-card border border-foreground/10 grid place-items-center text-[11px] font-medium shrink-0">02</div>
               </div>
               <div className="md:pl-10 text-left order-2">
-                <h4 className="text-[15px] md:text-[16px] font-black tracking-tight uppercase leading-none">Translate to decisions</h4>
+                <h4 className="text-[15px] md:text-[16px] font-bold tracking-tight uppercase leading-none">Translate to decisions</h4>
                 <p className="text-[10px] tracking-[0.14em] uppercase opacity-40 mt-1">Power BI · Streamlit</p>
                 <p className="text-sm leading-[1.6] opacity-60 mt-3">Raw insight into a dashboard stakeholders will actually open. One view that decides, not a deck that explains.</p>
               </div>
@@ -307,7 +448,7 @@ function Home() {
 
             <div className="seq-alt grid md:grid-cols-2 gap-0 items-start">
               <div className="md:pr-10 md:text-right order-2 md:order-1">
-                <h4 className="text-[15px] md:text-[16px] font-black tracking-tight uppercase leading-none">Build what does not exist</h4>
+                <h4 className="text-[15px] md:text-[16px] font-bold tracking-tight uppercase leading-none">Build what does not exist</h4>
                 <p className="text-[10px] tracking-[0.14em] uppercase opacity-40 mt-1">Full stack · Shipped</p>
                 <p className="text-sm leading-[1.6] opacity-60 mt-3">When the tool does not exist, build it end to end. Stop the leak at the source.</p>
               </div>
@@ -319,77 +460,122 @@ function Home() {
         </div>
       </section>
 
-      {/* IMPACT PILLARS (STACKED CARDS) */}
-      <section className="py-24 md:py-48 px-6 md:px-12 max-w-[1200px] mx-auto flex flex-col gap-12 relative pb-[50vh]">
-
-        {/* PILLAR 1: DATA */}
-        <div className="pillar-card sticky top-[5vh] md:top-[12vh] w-full bg-foreground text-background rounded-3xl p-6 md:p-10 shadow-2xl flex flex-col md:flex-row gap-8 items-center z-10">
-          <div className="md:w-1/2 flex flex-col gap-4">
-            <div className="text-sm font-bold uppercase tracking-widest opacity-70 border-b border-background/20 pb-4">01 // Data Engineering</div>
-            <h2 className="text-[10vw] md:text-[5vw] font-black leading-[0.85] tracking-tighter uppercase mt-2">Revenue<br />Leakage</h2>
-            <div className="text-4xl md:text-5xl font-bold tracking-tighter opacity-80 mt-1">$1.14M+ Identified</div>
-            <p className="text-lg md:text-xl font-normal leading-relaxed opacity-70 mt-2">
-              Constructing end-to-end e-commerce conversion funnels using BigQuery to isolate session drop-offs and optimize user journeys.
-            </p>
-            <Link to="/projects" className="mt-4 flex items-center gap-4 text-sm font-bold uppercase tracking-widest hover:opacity-70 transition-opacity w-fit group">
-              View Case Study <ArrowRight size={20} />
-            </Link>
-          </div>
-          <div className="md:w-1/2 flex flex-col justify-center items-center text-center p-8 bg-background/5 rounded-2xl w-full h-full border border-background/10 min-h-[300px]">
-            <div className="text-6xl md:text-8xl font-black tracking-tighter mb-2">73,961</div>
-            <div className="text-sm md:text-base uppercase tracking-widest opacity-70 mb-6">Critical Drop-offs Captured</div>
-            <div className="flex gap-3 flex-wrap justify-center">
-              <span className="px-4 py-2 bg-background text-foreground text-xs font-bold uppercase tracking-widest rounded-full">BigQuery</span>
-              <span className="px-4 py-2 bg-background text-foreground text-xs font-bold uppercase tracking-widest rounded-full">SQL</span>
-            </div>
-          </div>
+      {/* SELECTED WORK — FULLSCREEN CHAPTERS (NO CARDS). Same copy, new layout. */}
+      <section className="ch-wrap relative border-t border-foreground/10">
+        <div className="sticky top-0 z-40 h-[2px] bg-foreground/10">
+          <div className="ch-progress h-full w-full origin-left scale-x-0 bg-foreground/60" />
         </div>
 
-        {/* PILLAR 2: AI */}
-        <div className="pillar-card sticky top-[7vh] md:top-[16vh] w-full bg-zinc-900 text-white rounded-3xl p-6 md:p-10 shadow-2xl flex flex-col md:flex-row-reverse gap-8 items-center z-20 border border-white/10">
-          <div className="md:w-1/2 flex flex-col gap-4">
-            <div className="text-sm font-bold uppercase tracking-widest opacity-70 border-b border-white/20 pb-4">02 // Artificial Intelligence</div>
-            <h2 className="text-[10vw] md:text-[5vw] font-black leading-[0.85] tracking-tighter uppercase mt-2">Vizzy<br />Pilot</h2>
-            <div className="text-4xl md:text-5xl font-bold tracking-tighter opacity-80 mt-1">&lt;65ms p95</div>
-            <p className="text-lg md:text-xl font-normal leading-relaxed opacity-70 mt-2">
-              Translating natural language into validated database operations, delivering results onto an interactive BI canvas with hybrid routing.
-            </p>
-            <Link to="/projects" className="mt-4 flex items-center gap-4 text-sm font-bold uppercase tracking-widest hover:opacity-70 transition-opacity w-fit group">
-              View Specifications <ArrowRight size={20} />
-            </Link>
-          </div>
-          <div className="md:w-1/2 flex flex-col justify-center items-center text-center p-8 bg-white/5 rounded-2xl w-full h-full border border-white/10 min-h-[300px]">
-            <div className="text-6xl md:text-8xl font-black tracking-tighter mb-2">100MB</div>
-            <div className="text-sm md:text-base uppercase tracking-widest opacity-70 mb-6">Ingested & Cleaned in 2.3s</div>
-            <div className="flex gap-3 flex-wrap justify-center">
-              <span className="px-4 py-2 bg-white text-black text-xs font-bold uppercase tracking-widest rounded-full">FastAPI</span>
-              <span className="px-4 py-2 bg-white text-black text-xs font-bold uppercase tracking-widest rounded-full">DuckDB</span>
+        {/* CHAPTER 01 — same content as pillar 1 */}
+        <section className="ch ch-from-left relative overflow-hidden bg-foreground text-background">
+          <div className="ch-slide max-w-[1400px] mx-auto px-4 md:px-12 grid grid-cols-1 md:grid-cols-12 gap-0 items-stretch min-h-[100dvh]">
+            <div className="md:col-span-7 flex flex-col justify-center py-14 md:py-0 md:pr-[3vw]">
+              <div className="ch-lines flex flex-col">
+                <div className="text-sm font-bold uppercase tracking-widest opacity-70 border-b border-background/20 pb-4">01 // Data Engineering</div>
+                <h2 className="text-4xl md:text-6xl font-bold leading-none tracking-tighter uppercase mt-6">Revenue Leakage</h2>
+                <div className="text-2xl md:text-3xl font-bold tracking-tighter opacity-80 mt-3 font-mono">$1.14M+ Identified</div>
+                <p className="text-base leading-relaxed opacity-70 mt-4 max-w-[65ch]">
+                  Constructing end-to-end e-commerce conversion funnels using BigQuery to isolate session drop-offs and optimize user journeys.
+                </p>
+                <Link to="/projects" className="mt-6 flex items-center gap-4 text-sm font-bold uppercase tracking-widest hover:opacity-70 transition-opacity w-fit active:scale-[0.98]">
+                  View Case Study <ArrowRight size={20} strokeWidth={1.5} />
+                </Link>
+              </div>
+              <div className="ch-proof border-t border-background/20 pt-6 mt-10">
+                <div className="font-mono text-5xl md:text-7xl font-bold tracking-tighter">73,961</div>
+                <div className="text-sm md:text-base uppercase tracking-widest opacity-70 mt-2">Critical Drop-offs Captured</div>
+                <div className="flex gap-3 flex-wrap mt-5">
+                  <span className="px-4 py-2 bg-background text-foreground text-xs font-bold uppercase tracking-widest rounded-full">BigQuery</span>
+                  <span className="px-4 py-2 bg-background text-foreground text-xs font-bold uppercase tracking-widest rounded-full">SQL</span>
+                </div>
+              </div>
+            </div>
+            <div className="md:col-span-5 relative min-h-[52dvh] md:min-h-0">
+              <div className="absolute inset-0 overflow-hidden">
+                <img src="https://images.unsplash.com/photo-1460925895917-afdab827c52f?q=80&w=900&auto=format&fit=crop" alt="E-commerce analytics dashboard with conversion charts on a laptop" loading="lazy" decoding="async" onError={(e) => { const t = e.currentTarget; if (!t.dataset.fb) { t.dataset.fb = "1"; t.src = "https://picsum.photos/seed/revenue-funnel/900/1200"; } }} className="ch-img absolute inset-0 w-full h-full object-cover will-change-transform" style={{ maskImage: "linear-gradient(to left, black 62%, transparent 98%)", WebkitMaskImage: "linear-gradient(to left, black 62%, transparent 98%)" }} />
+                <div className="absolute inset-0 bg-gradient-to-r from-foreground via-foreground/15 to-transparent" />
+              </div>
+              <div className="absolute bottom-6 left-4 right-4 md:left-8 md:right-0 font-mono text-[11px] tracking-[0.12em] uppercase opacity-70">
+                <div className="border-t border-background/25 pt-3 flex justify-between"><span>$1,141,441 at View → Cart</span><span>Fig. 01</span></div>
+              </div>
             </div>
           </div>
-        </div>
+          <div aria-hidden className="pointer-events-none select-none absolute top-8 right-4 md:right-12 text-[26vw] md:text-[12rem] leading-none font-black text-transparent opacity-10" style={{ WebkitTextStroke: "1px rgba(255,255,255,0.6)" }}>01</div>
+        </section>
 
-        {/* PILLAR 3: ANALYSIS */}
-        <div className="pillar-card sticky top-[9vh] md:top-[20vh] w-full bg-background text-foreground rounded-3xl p-6 md:p-10 shadow-2xl flex flex-col md:flex-row gap-8 items-center z-30 border border-foreground/10">
-          <div className="md:w-1/2 flex flex-col gap-4">
-            <div className="text-sm font-bold uppercase tracking-widest opacity-70 border-b border-foreground/20 pb-4">03 // Predictive Analytics</div>
-            <h2 className="text-[10vw] md:text-[5vw] font-black leading-[0.85] tracking-tighter uppercase mt-2">Churn<br />Prediction</h2>
-            <div className="text-4xl md:text-5xl font-bold tracking-tighter opacity-80 mt-1">$106K+ ROI</div>
-            <p className="text-lg md:text-xl font-normal leading-relaxed opacity-70 mt-2">
-              Business-aware retention optimization using custom cost matrices to tune decision thresholds purely on ROI rather than ML accuracy.
-            </p>
-            <Link to="/projects" className="mt-4 flex items-center gap-4 text-sm font-bold uppercase tracking-widest hover:opacity-70 transition-opacity w-fit group">
-              View Case Study <ArrowRight size={20} />
-            </Link>
-          </div>
-          <div className="md:w-1/2 flex flex-col justify-center items-center text-center p-8 bg-foreground/5 rounded-2xl w-full h-full border border-foreground/10 min-h-[300px]">
-            <div className="text-6xl md:text-8xl font-black tracking-tighter mb-2">14+</div>
-            <div className="text-sm md:text-base uppercase tracking-widest opacity-70 mb-6">Business Hypotheses Validated</div>
-            <div className="flex gap-3 flex-wrap justify-center">
-              <span className="px-4 py-2 bg-foreground text-background text-xs font-bold uppercase tracking-widest rounded-full">Python</span>
-              <span className="px-4 py-2 bg-foreground text-background text-xs font-bold uppercase tracking-widest rounded-full">Scikit-Learn</span>
+        {/* CHAPTER 02 — same content as pillar 2, inverted for variance */}
+        <section className="ch ch-from-right relative overflow-hidden bg-zinc-950 text-white border-t border-white/10">
+          <div className="ch-slide max-w-[1400px] mx-auto px-4 md:px-12 grid grid-cols-1 md:grid-cols-12 gap-0 items-stretch min-h-[100dvh]">
+            <div className="md:col-span-5 relative min-h-[52dvh] md:min-h-0 order-2 md:order-1">
+              <div className="absolute inset-0 overflow-hidden">
+                <img src="https://images.unsplash.com/photo-1677442136019-21780ecad995?q=80&w=900&auto=format&fit=crop" alt="Artificial intelligence visualization for Vizzy Pilot" loading="lazy" decoding="async" onError={(e) => { const t = e.currentTarget; if (!t.dataset.fb) { t.dataset.fb = "1"; t.src = "https://picsum.photos/seed/bi-canvas/900/1200"; } }} className="ch-img absolute inset-0 w-full h-full object-cover opacity-80 will-change-transform" style={{ maskImage: "linear-gradient(to right, black 62%, transparent 98%)", WebkitMaskImage: "linear-gradient(to right, black 62%, transparent 98%)" }} />
+                <div className="absolute inset-0 bg-gradient-to-l from-zinc-950 via-zinc-950/20 to-transparent" />
+              </div>
+              <div className="absolute bottom-6 left-4 right-4 md:right-8 md:left-0 font-mono text-[11px] tracking-[0.12em] uppercase text-white/60">
+                <div className="border-t border-white/20 pt-3 flex justify-between"><span>Hybrid routing · live canvas</span><span>Fig. 02</span></div>
+              </div>
+            </div>
+            <div className="md:col-span-7 order-1 md:order-2 flex flex-col justify-center py-14 md:py-0 md:pl-[3vw]">
+              <div className="ch-lines flex flex-col">
+                <div className="text-sm font-bold uppercase tracking-widest opacity-70 border-b border-white/20 pb-4">02 // Artificial Intelligence</div>
+                <h2 className="text-4xl md:text-6xl font-bold leading-none tracking-tighter uppercase mt-6">Vizzy Pilot</h2>
+                <div className="text-2xl md:text-3xl font-bold tracking-tighter opacity-80 mt-3 font-mono">&lt;65ms p95</div>
+                <p className="text-base leading-relaxed opacity-70 mt-4 max-w-[65ch]">
+                  Translating natural language into validated database operations, delivering results onto an interactive BI canvas with hybrid routing.
+                </p>
+                <Link to="/projects" className="mt-6 flex items-center gap-4 text-sm font-bold uppercase tracking-widest hover:opacity-70 transition-opacity w-fit active:scale-[0.98]">
+                  View Specifications <ArrowRight size={20} strokeWidth={1.5} />
+                </Link>
+              </div>
+              <div className="ch-proof border-t border-white/20 pt-6 mt-10">
+                <div className="font-mono text-5xl md:text-7xl font-bold tracking-tighter">100MB</div>
+                <div className="text-sm md:text-base uppercase tracking-widest opacity-70 mt-2">Ingested & Cleaned in 2.3s</div>
+                <div className="flex gap-3 flex-wrap mt-5">
+                  <span className="px-4 py-2 bg-white text-black text-xs font-bold uppercase tracking-widest rounded-full">FastAPI</span>
+                  <span className="px-4 py-2 bg-white text-black text-xs font-bold uppercase tracking-widest rounded-full">DuckDB</span>
+                </div>
+              </div>
             </div>
           </div>
-        </div>
+          <div aria-hidden className="pointer-events-none select-none absolute top-8 left-4 md:left-12 text-[26vw] md:text-[12rem] leading-none font-black text-transparent opacity-10" style={{ WebkitTextStroke: "1px rgba(255,255,255,0.5)" }}>02</div>
+        </section>
+
+        {/* CHAPTER 03 — same content as pillar 3 */}
+        <section className="ch ch-from-left relative overflow-hidden bg-background text-foreground border-t border-foreground/10">
+          <div className="ch-slide max-w-[1400px] mx-auto px-4 md:px-12 grid grid-cols-1 md:grid-cols-12 gap-0 items-stretch min-h-[100dvh]">
+            <div className="md:col-span-7 flex flex-col justify-center py-14 md:py-0 md:pr-[3vw]">
+              <div className="ch-lines flex flex-col">
+                <div className="text-sm font-bold uppercase tracking-widest opacity-70 border-b border-foreground/20 pb-4">03 // Predictive Analytics</div>
+                <h2 className="text-4xl md:text-6xl font-bold leading-none tracking-tighter uppercase mt-6">Churn Prediction</h2>
+                <div className="text-2xl md:text-3xl font-bold tracking-tighter opacity-80 mt-3 font-mono">$106K+ ROI</div>
+                <p className="text-base leading-relaxed opacity-70 mt-4 max-w-[65ch]">
+                  Business-aware retention optimization using custom cost matrices to tune decision thresholds purely on ROI rather than ML accuracy.
+                </p>
+                <Link to="/projects" className="mt-6 flex items-center gap-4 text-sm font-bold uppercase tracking-widest hover:opacity-70 transition-opacity w-fit active:scale-[0.98]">
+                  View Case Study <ArrowRight size={20} strokeWidth={1.5} />
+                </Link>
+              </div>
+              <div className="ch-proof border-t border-foreground/20 pt-6 mt-10">
+                <div className="font-mono text-5xl md:text-7xl font-bold tracking-tighter">14+</div>
+                <div className="text-sm md:text-base uppercase tracking-widest opacity-70 mt-2">Business Hypotheses Validated</div>
+                <div className="flex gap-3 flex-wrap mt-5">
+                  <span className="px-4 py-2 bg-foreground text-background text-xs font-bold uppercase tracking-widest rounded-full">Python</span>
+                  <span className="px-4 py-2 bg-foreground text-background text-xs font-bold uppercase tracking-widest rounded-full">Scikit-Learn</span>
+                </div>
+              </div>
+            </div>
+            <div className="md:col-span-5 relative min-h-[52dvh] md:min-h-0">
+              <div className="absolute inset-0 overflow-hidden">
+                <img src="https://images.unsplash.com/photo-1551288049-bebda4e38f71?q=80&w=900&auto=format&fit=crop" alt="Customer churn data dashboard with performance graphs" loading="lazy" decoding="async" onError={(e) => { const t = e.currentTarget; if (!t.dataset.fb) { t.dataset.fb = "1"; t.src = "https://picsum.photos/seed/churn-roi/900/1200"; } }} className="ch-img absolute inset-0 w-full h-full object-cover will-change-transform" style={{ maskImage: "linear-gradient(to left, black 62%, transparent 98%)", WebkitMaskImage: "linear-gradient(to left, black 62%, transparent 98%)" }} />
+                <div className="absolute inset-0 bg-gradient-to-r from-background via-background/15 to-transparent" />
+              </div>
+              <div className="absolute bottom-6 left-4 right-4 md:left-8 md:right-0 font-mono text-[11px] tracking-[0.12em] uppercase opacity-60">
+                <div className="border-t border-foreground/20 pt-3 flex justify-between"><span>Thresholds tuned on ROI</span><span>Fig. 03</span></div>
+              </div>
+            </div>
+          </div>
+          <div aria-hidden className="pointer-events-none select-none absolute top-8 right-4 md:right-12 text-[26vw] md:text-[12rem] leading-none font-black text-transparent opacity-10" style={{ WebkitTextStroke: "1px currentColor" }}>03</div>
+        </section>
 
       </section>
     </div>
