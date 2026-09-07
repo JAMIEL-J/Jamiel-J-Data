@@ -3,6 +3,7 @@ import { useEffect, useRef, useState } from "react";
 import { X, ArrowRight, Github, ExternalLink } from "lucide-react";
 import gsap from "gsap";
 import { ScrollTrigger } from "gsap/ScrollTrigger";
+import Lenis from "lenis";
 
 gsap.registerPlugin(ScrollTrigger);
 
@@ -162,9 +163,9 @@ const CASE_STUDIES = [
       keyFindings: {
         metrics: [
           { label: "Total Orders", value: "98,666" },
-          { label: "Total Sales Rev", value: "₹13.59M" },
-          { label: "Gross Revenue", value: "₹15.84M" },
-          { label: "Avg Item Price", value: "₹120.65" }
+          { label: "Total Sales Rev", value: "R$13.59M" },
+          { label: "Gross Revenue", value: "R$15.84M" },
+          { label: "Avg Item Price", value: "R$120.65" }
         ],
         insightsList: [
           {
@@ -181,7 +182,7 @@ const CASE_STUDIES = [
           },
           {
             title: "3️⃣ A Small Group of Sellers Dominates Revenue",
-            finding: "Top Performers generate ₹200K+ individually, while Low Performers generate <₹1,000 despite multiple orders.",
+            finding: "Top Performers generate R$200K+ individually, while Low Performers generate <R$1,000 despite multiple orders.",
             impact: "High variance in seller execution and revenue contribution.",
             implication: "High dependency on top sellers and inefficiency among low-value sellers."
           },
@@ -257,204 +258,387 @@ const CASE_STUDIES = [
   }
 ];
 
+const CHAPTER_PROOF: Record<string, { value: string; label: string; fact: string }> = {
+  "Revenue Leak Detection": { value: "$1.14M+", label: "Revenue leakage identified", fact: "73,961 drop-offs · View → Cart" },
+  "Customer Churn Prediction": { value: "$106K+", label: "Net ROI modeled", fact: "Cost matrix · threshold sweep" },
+  "Customer Segmentation & Revenue Analysis": { value: "~80%", label: "High-value revenue share", fact: "RFM · rule-based segments" },
+  "Demand Forecasting & Inventory": { value: "4.01%", label: "Best WAPE error", fact: "45 locations scaled" },
+  "Sales Performance & Territory Optimization": { value: "R$13.59M", label: "Total sales revenue", fact: "98,666 orders · avg R$120.65" },
+  "Customer Support SLA & Satisfaction Analysis": { value: "47.29%", label: "Resolution SLA breach", fact: "2,800 tickets · Excel dashboard" },
+  "Vizzy Pilot": { value: "<65ms", label: "p95 multi-aggregation", fact: "100MB ingested & cleaned in 2.3s" },
+  "DNA — Local AI Assistant": { value: "Zero GPU", label: "Intel i3 · 8GB RAM", fact: "INT8 faster-whisper · openWakeWord" },
+};
+
 function Projects() {
   const [activeProject, setActiveProject] = useState<any | null>(null);
   const [filterTag, setFilterTag] = useState<string>("All");
+  const panelRef = useRef<HTMLDivElement>(null);
+  const lenisRef = useRef<Lenis | null>(null);
+  const filterBarRef = useRef<HTMLDivElement>(null);
 
   const tags = ["All", ...Array.from(new Set(CASE_STUDIES.map(c => c.tag)))];
   const filteredProjects = filterTag === "All" ? CASE_STUDIES : CASE_STUDIES.filter(c => c.tag === filterTag);
+  const activeIdx = activeProject ? filteredProjects.indexOf(activeProject) : -1;
+
+  const stepProject = (dir: number) => {
+    if (activeIdx < 0 || filteredProjects.length === 0) return;
+    const next = filteredProjects[(activeIdx + dir + filteredProjects.length) % filteredProjects.length];
+    setActiveProject(next);
+  };
 
   useEffect(() => {
-    // Lock body scroll when modal is open
+    // Lock body scroll AND stop Lenis when viewer is open (overflow alone can't stop virtual scroll)
     if (activeProject) {
       document.body.style.overflow = 'hidden';
+      lenisRef.current?.stop();
     } else {
       document.body.style.overflow = 'unset';
+      lenisRef.current?.start();
     }
     return () => { document.body.style.overflow = 'unset'; };
   }, [activeProject]);
 
   useEffect(() => {
+    // Lenis smooth scroll, driven once via the GSAP ticker (same pattern as home — no double RAF, no GSAP conflict)
+    const prefersReduced = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+    if (prefersReduced) {
+      // No smoothing — filters simply hide once scrolled past the header
+      const onScroll = () => {
+        const bar = filterBarRef.current;
+        if (bar) bar.classList.toggle("pj-filters-hidden", window.scrollY > 160);
+      };
+      window.addEventListener("scroll", onScroll, { passive: true });
+      return () => window.removeEventListener("scroll", onScroll);
+    }
+    const isMobile = window.innerWidth < 768;
+    const isTouch = window.matchMedia("(pointer: coarse)").matches;
+    const lenis = new Lenis({
+      autoRaf: false,
+      duration: 0.7,
+      easing: (t: number) => 1 - Math.pow(1 - t, 3),
+      lerp: isMobile || isTouch ? 0.18 : 0.16,
+      smoothWheel: true,
+      syncTouch: false,
+      gestureOrientation: "vertical",
+      touchMultiplier: 1.0,
+    });
+    lenis.on("scroll", (e: any) => {
+      ScrollTrigger.update();
+      // Filters live only at the top — hide once scrolled past the header
+      const bar = filterBarRef.current;
+      if (bar) {
+        const y = typeof e?.scroll === "number" ? e.scroll : window.scrollY;
+        bar.classList.toggle("pj-filters-hidden", y > 160);
+      }
+    });
+    lenisRef.current = lenis;
+    const ticker = (time: number) => lenis.raf(time * 1000);
+    gsap.ticker.add(ticker);
+    gsap.ticker.lagSmoothing(0);
+    return () => {
+      gsap.ticker.remove(ticker);
+      lenis.destroy();
+      lenisRef.current = null;
+    };
+  }, []);
+
+  useEffect(() => {
     const prefersReduced = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
     if (prefersReduced) return;
 
-    gsap.fromTo(
-      ".hero-text",
-      { y: 60, opacity: 0 },
-      { y: 0, opacity: 1, duration: 1, ease: "power3.out", delay: 0.1 }
-    );
-
-    gsap.fromTo(
-      ".project-row",
-      { y: 50, opacity: 0 },
-      { y: 0, opacity: 1, duration: 0.8, stagger: 0.1, ease: "power3.out", delay: 0.3 }
-    );
+    gsap.ticker.lagSmoothing(0);
+    const ctx = gsap.context(() => {
+      gsap.fromTo(
+        ".hero-text",
+        { y: 60, opacity: 0 },
+        { y: 0, opacity: 1, duration: 0.9, stagger: 0.09, ease: "power3.out", delay: 0.05, overwrite: "auto" }
+      );
+    });
+    return () => ctx.revert();
   }, []);
+
+  useEffect(() => {
+    const prefersReduced = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+    if (prefersReduced) return;
+
+    const ctx = gsap.context(() => {
+      // Chapters slide in alternating with their layout direction, once each
+      gsap.utils.toArray<HTMLElement>(".pj-from-left .pj-slide").forEach((el) => {
+        el.style.willChange = "transform, opacity";
+        gsap.fromTo(
+          el,
+          { x: -72, opacity: 0 },
+          {
+            x: 0,
+            opacity: 1,
+            duration: 0.8,
+            ease: "power3.out",
+            overwrite: "auto",
+            scrollTrigger: { trigger: el, start: "top 80%", once: true },
+            onComplete: () => (el.style.willChange = "auto"),
+          }
+        );
+      });
+      gsap.utils.toArray<HTMLElement>(".pj-from-right .pj-slide").forEach((el) => {
+        el.style.willChange = "transform, opacity";
+        gsap.fromTo(
+          el,
+          { x: 72, opacity: 0 },
+          {
+            x: 0,
+            opacity: 1,
+            duration: 0.8,
+            ease: "power3.out",
+            overwrite: "auto",
+            scrollTrigger: { trigger: el, start: "top 80%", once: true },
+            onComplete: () => (el.style.willChange = "auto"),
+          }
+        );
+      });
+      gsap.utils.toArray<HTMLElement>(".pj-lines").forEach((group) => {
+        const kids = Array.from(group.children);
+        gsap.fromTo(
+          kids,
+          { y: 28, opacity: 0 },
+          {
+            y: 0,
+            opacity: 1,
+            duration: 0.6,
+            stagger: 0.07,
+            ease: "power3.out",
+            overwrite: "auto",
+            scrollTrigger: { trigger: group, start: "top 82%", once: true },
+          }
+        );
+      });
+    });
+    requestAnimationFrame(() => ScrollTrigger.refresh());
+    return () => ctx.revert();
+  }, [filterTag]);
+
+  useEffect(() => {
+    if (!activeProject) return;
+    const prefersReduced = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+    panelRef.current?.scrollTo(0, 0);
+    if (prefersReduced) return;
+    gsap.fromTo(
+      ".pj-panel-inner",
+      { y: 24, opacity: 0 },
+      { y: 0, opacity: 1, duration: 0.5, ease: "power3.out", overwrite: "auto" }
+    );
+  }, [activeProject]);
 
   return (
     <div className="min-h-screen bg-background text-foreground">
-      {/* Huge background parallax text */}
-      <div className="absolute top-[10%] left-0 w-full text-center pointer-events-none opacity-[0.03] z-0 overflow-hidden">
-        <h1 className="text-[30vw] font-black uppercase tracking-tighter leading-none whitespace-nowrap">
-          ARCHIVE
-        </h1>
-      </div>
-
-      <div className="relative z-10 pt-48 pb-24 px-6 md:px-12 max-w-[1400px] mx-auto flex flex-col items-center text-center gap-10 border-b border-foreground/10 mb-8">
-        <div className="hero-text text-xs md:text-sm font-bold uppercase tracking-widest opacity-50 flex items-center gap-4 border border-foreground/20 rounded-full px-6 py-2 bg-foreground/[0.02]">
-          <span className="w-2 h-2 rounded-full bg-foreground animate-pulse"></span>
-          Archive — Selected Works
-        </div>
-        
-        <h1 className="hero-text text-6xl md:text-8xl lg:text-[9rem] font-black uppercase tracking-tighter leading-[0.85] text-balance">
+      <div className="relative z-10 pt-32 md:pt-40 pb-10 px-4 md:px-12 max-w-[1400px] mx-auto flex flex-col items-center text-center">
+        <p className="hero-text font-mono text-[11px] tracking-[0.18em] uppercase opacity-50">
+          Archive — {String(CASE_STUDIES.length).padStart(2, "0")} works · scroll, one case fills the screen
+        </p>
+        <h1 className="hero-text whitespace-nowrap text-[11vw] md:text-[8rem] font-bold uppercase tracking-tighter leading-[0.85] mt-4">
           Case Studies
         </h1>
       </div>
 
-      <div className="relative z-10 w-full max-w-[1400px] mx-auto px-6 md:px-12 pb-48">
-        {/* Filter Bar */}
-        <div className="flex flex-wrap items-center gap-4 mb-12">
-          {tags.map(tag => (
-            <button
-              key={tag}
-              onClick={() => setFilterTag(tag)}
-              className={`px-6 py-2 rounded-full text-sm font-bold uppercase tracking-widest transition-colors ${
-                filterTag === tag 
-                  ? "bg-foreground text-background" 
-                  : "bg-transparent border border-foreground/20 hover:border-foreground"
-              }`}
-            >
-              {tag}
-            </button>
-          ))}
-        </div>
-
-        <div>
-          {filteredProjects.map((c, i) => (
-            <div
-              key={i}
-              onClick={() => setActiveProject(c)}
-              className="project-row group relative flex flex-col md:flex-row md:items-center justify-between py-12 md:py-20 border-b-2 border-foreground/20 hover:border-foreground transition-colors cursor-pointer overflow-hidden"
-            >
-              {/* Background fill animation */}
-              <div className="absolute inset-0 bg-foreground origin-bottom scale-y-0 group-hover:scale-y-100 transition-transform duration-500 ease-[cubic-bezier(0.7,0,0.3,1)] z-0"></div>
-
-              <div className="relative z-10 flex flex-col md:flex-row md:items-center gap-6 md:gap-16 w-full text-foreground group-hover:text-background transition-colors duration-500">
-                <div className="text-sm font-black uppercase tracking-widest opacity-50 w-8">0{i + 1}</div>
-                <div className="flex flex-col">
-                  <h2 className="text-3xl md:text-[5vw] font-black uppercase tracking-tighter leading-[0.85] group-hover:translate-x-8 transition-transform duration-500 ease-out">{c.title}</h2>
-                  <div className="text-sm md:text-lg font-bold uppercase tracking-widest opacity-70 mt-4 group-hover:translate-x-8 transition-transform duration-500 ease-out delay-75">{c.tag}</div>
-                </div>
-
-                <div className="md:ml-auto flex flex-wrap gap-3 mt-6 md:mt-0 opacity-0 group-hover:opacity-100 md:group-hover:-translate-x-8 transition-all duration-500 ease-out delay-100">
-                  {c.metrics.slice(0, 3).map(metric => (
-                    <span key={metric} className="px-4 py-2 border border-current rounded-full text-xs font-bold uppercase tracking-widest whitespace-nowrap">
-                      {metric}
-                    </span>
-                  ))}
-                </div>
-              </div>
-            </div>
-          ))}
+      {/* Sticky filter bar */}
+      <div ref={filterBarRef} className="pj-filters sticky top-24 z-30 bg-background/85 backdrop-blur-md border-y border-foreground/10">
+        <div className="max-w-[1400px] mx-auto px-4 md:px-12 py-3 flex gap-2 overflow-x-auto">
+          {tags.map(tag => {
+            const count = tag === "All" ? CASE_STUDIES.length : CASE_STUDIES.filter(c => c.tag === tag).length;
+            const on = filterTag === tag;
+            return (
+              <button
+                key={tag}
+                onClick={() => setFilterTag(tag)}
+                className={`font-mono text-[11px] tracking-[0.14em] uppercase px-5 py-2 rounded-full border whitespace-nowrap transition-colors ${
+                  on
+                    ? "bg-foreground text-background border-foreground"
+                    : "bg-transparent border-foreground/20 hover:border-foreground"
+                }`}
+              >
+                {tag} · {String(count).padStart(2, "0")}
+              </button>
+            );
+          })}
         </div>
       </div>
 
-      {/* Floating Panel (Modal) */}
-      <div
-        className={`fixed inset-0 z-50 flex justify-end transition-all duration-500 ${activeProject ? 'opacity-100 pointer-events-auto' : 'opacity-0 pointer-events-none'}`}
-      >
-        {/* Backdrop */}
-        <div
-          className="absolute inset-0 bg-background/80 backdrop-blur-sm cursor-pointer"
-          onClick={() => setActiveProject(null)}
-        />
-
-        {/* Panel */}
-        <div
-          className={`relative w-full md:w-[850px] h-full bg-foreground text-background shadow-2xl p-6 md:p-16 flex flex-col overflow-y-auto transition-transform duration-500 ease-out transform ${activeProject ? 'translate-x-0' : 'translate-x-full'}`}
-        >
-          <button
-            onClick={() => setActiveProject(null)}
-            className="absolute top-8 right-8 p-4 hover:opacity-70 transition-opacity"
-          >
-            <X size={32} />
-          </button>
-
-          {activeProject && (
-            <div className="mt-16 animate-up pb-16">
-              <div className="text-sm uppercase tracking-widest opacity-70 mb-6 md:mb-8 border-b border-background/20 pb-4">{activeProject.tag}</div>
-              <h2 className="text-3xl md:text-5xl font-black tracking-tighter leading-tight mb-6 md:mb-8">{activeProject.title}</h2>
-              <p className="text-lg md:text-xl opacity-80 leading-relaxed mb-8">{activeProject.excerpt}</p>
-
-              {/* Links Placeholders */}
-              <div className="flex flex-wrap items-center gap-4 mb-12">
-                {activeProject.liveLink && (
-                  <a href={activeProject.liveLink} target="_blank" rel="noreferrer" className="flex items-center gap-3 px-6 py-3 bg-background text-foreground rounded-full text-sm font-bold uppercase tracking-widest hover:opacity-80 transition-opacity">
-                    <ExternalLink size={18} />
-                    Live Preview
-                  </a>
-                )}
-                {activeProject.githubLink && (
-                  <a href={activeProject.githubLink} target="_blank" rel="noreferrer" className="flex items-center gap-3 px-6 py-3 bg-transparent border border-background/30 text-background rounded-full text-sm font-bold uppercase tracking-widest hover:border-background transition-colors">
-                    <Github size={18} />
-                    Source Code
-                  </a>
-                )}
-              </div>
-
-              {/* If rich fullSpecs exist */}
-              {activeProject.fullSpecs ? (
-                <div className="flex flex-col gap-10">
-                  {activeProject.fullSpecs.problem && (
-                    <div>
-                      <h3 className="text-sm font-bold uppercase tracking-widest mb-4 opacity-50">The Business Problem</h3>
-                      <p className="text-lg opacity-90 leading-relaxed italic border-l-4 border-foreground/30 pl-4">{activeProject.fullSpecs.problem}</p>
+      <div className="pj-wrap">
+        {filteredProjects.map((c, i) => {
+          const proof = (CHAPTER_PROOF as Record<string, { value: string; label: string; fact: string }>)[c.title];
+          const dark = c.tag === "Flagship System";
+          const flip = i % 2 === 1;
+          const num = String(i + 1).padStart(2, "0");
+          return (
+            <section
+              key={c.title}
+              className={`pj-ch group ${flip ? "pj-from-right" : "pj-from-left"} relative overflow-hidden border-b border-foreground/10 ${dark ? "bg-zinc-950 text-white" : ""}`}
+            >
+              <div aria-hidden className={`pointer-events-none absolute inset-0 origin-bottom scale-y-0 transition-transform duration-500 ease-[cubic-bezier(0.7,0,0.3,1)] group-hover:scale-y-100 ${dark ? "bg-white" : "bg-foreground"}`} />
+              <div className={`pj-slide relative z-10 max-w-[1400px] mx-auto px-6 md:px-12 min-h-[100dvh] flex flex-col justify-center py-14 md:py-20 transition-colors duration-500 ${dark ? "group-hover:text-zinc-950" : "group-hover:text-background"}`}>
+                <div className="pj-lines flex flex-col items-center text-center">
+                  <p className="font-mono text-[11px] tracking-[0.18em] uppercase opacity-50">{num} // {c.tag}</p>
+                  <h2 className="md:whitespace-nowrap text-4xl md:text-[3.2rem] font-bold tracking-tighter leading-none uppercase mt-5">{c.title}</h2>
+                </div>
+                <div className="grid md:grid-cols-12 gap-0 items-stretch mt-10 md:mt-14">
+                <div className={`md:col-span-7 flex flex-col items-center text-center py-2 ${flip ? "order-1 md:order-2 md:pl-[3vw]" : "order-1 md:pr-[3vw]"}`}>
+                  <div className="pj-lines flex flex-col items-center">
+                    <p className="text-base opacity-70 leading-relaxed max-w-[65ch] mt-0">{c.excerpt}</p>
+                    <div className="flex flex-wrap justify-center gap-2 mt-6">
+                      {c.metrics.slice(0, 3).map((metric, mi) => (
+                        <span
+                          key={metric}
+                          className={`font-mono text-[10px] tracking-[0.12em] uppercase px-3 py-1.5 rounded-full border whitespace-nowrap ${
+                            mi === 0
+                              ? dark
+                                ? "bg-white text-zinc-950 border-white group-hover:bg-zinc-950 group-hover:text-white group-hover:border-zinc-950"
+                                : "bg-foreground text-background border-foreground group-hover:bg-background group-hover:text-foreground group-hover:border-background"
+                              : dark
+                                ? "border-white/20 group-hover:border-zinc-950/25"
+                                : "border-foreground/20 group-hover:border-background/25"
+                          }`}
+                        >
+                          {metric}
+                        </span>
+                      ))}
+                    </div>
+                    <div className="mt-8 flex justify-center">
+                      <button
+                        onClick={() => setActiveProject(c)}
+                        className={`inline-flex items-center gap-2 text-xs font-bold uppercase tracking-widest px-7 py-4 rounded-full transition-all active:scale-[0.98] ${
+                          dark ? "bg-white text-zinc-950 group-hover:bg-zinc-950 group-hover:text-white hover:opacity-85" : "bg-foreground text-background group-hover:bg-background group-hover:text-foreground hover:opacity-85"
+                        }`}
+                      >
+                        Open case <ArrowRight size={16} strokeWidth={1.5} />
+                      </button>
+                    </div>
+                  </div>
+                </div>
+                <div className={`md:col-span-5 flex flex-col items-center text-center py-2 relative ${flip ? "order-2 md:order-1 md:pr-[3vw]" : "md:pl-[3vw]"}`}>
+                  {proof && (
+                    <div className="pj-lines flex flex-col">
+                      <p className="font-mono text-6xl md:text-8xl font-semibold tracking-tighter">{proof.value}</p>
+                      <p className="font-mono text-[11px] tracking-[0.16em] uppercase opacity-50 mt-2">{proof.label}</p>
+                      <div className={`border-t mt-6 pt-4 font-mono text-xs opacity-60 flex justify-between gap-6 ${dark ? "border-white/15 group-hover:border-zinc-950/15" : "border-foreground/10 group-hover:border-background/15"}`}>
+                        <span>{proof.fact}</span>
+                        <span>Fig. {num}</span>
+                      </div>
                     </div>
                   )}
+                  <div
+                    aria-hidden
+                    className={`pointer-events-none select-none absolute top-8 text-[26vw] md:text-[10rem] leading-none font-extrabold text-transparent opacity-10 ${flip ? "left-4 md:left-0" : "right-4 md:right-0"}`}
+                    style={{ WebkitTextStroke: dark ? "1px rgba(255,255,255,0.5)" : "1px currentColor" }}
+                  >
+                    {num}
+                  </div>
+                </div>
+                </div>
+              </div>
+            </section>
+          );
+        })}
+      </div>
 
-                  {activeProject.fullSpecs.keyFindings && (
-                    <div className="flex flex-col gap-8 bg-background/5 p-6 rounded-lg border border-background/10">
-                      <h3 className="text-sm font-bold uppercase tracking-widest opacity-50">📊 Key Findings</h3>
+      {/* Full-width story viewer */}
+      {activeProject && (
+        <div ref={panelRef} data-lenis-prevent className="pj-panel fixed inset-0 z-[60] bg-background text-foreground overflow-y-auto" role="dialog" aria-modal="true" aria-label={activeProject.title}>
+          <div className="sticky top-0 z-10 bg-background/85 backdrop-blur-md border-b border-foreground/10">
+            <div className="max-w-[1400px] mx-auto px-5 md:px-16 py-4 flex items-center justify-between">
+              <button onClick={() => setActiveProject(null)} className="font-mono text-xs tracking-[0.16em] uppercase hover:opacity-70 transition-opacity">
+                ← Archive
+              </button>
+              <span className="font-mono text-[11px] tracking-[0.14em] uppercase opacity-40">
+                {activeIdx + 1} / {filteredProjects.length}
+              </span>
+              <button onClick={() => setActiveProject(null)} aria-label="Close case study" className="p-2 hover:opacity-60 transition-opacity">
+                <X size={22} />
+              </button>
+            </div>
+          </div>
 
-                      <div className="grid grid-cols-2 md:grid-cols-4 gap-6">
-                        {activeProject.fullSpecs.keyFindings.metrics.map((m: any, i: number) => (
-                          <div key={i} className="flex flex-col gap-1">
-                            <span className="text-2xl md:text-3xl font-black">{m.value}</span>
-                            <span className="text-xs uppercase tracking-widest opacity-70">{m.label}</span>
-                          </div>
-                        ))}
+          <div className="pj-panel-inner max-w-[1400px] mx-auto px-5 md:px-16 pt-10 md:pt-16">
+            <p className="font-mono text-[11px] tracking-[0.2em] uppercase opacity-50 text-center">{activeProject.tag}</p>
+            <h2 className="md:whitespace-nowrap text-4xl md:text-[3rem] font-bold tracking-tighter leading-[0.95] mt-4 mx-auto text-center">{activeProject.title}</h2>
+            <p className="text-lg md:text-xl opacity-60 leading-relaxed mt-4 max-w-[60ch] mx-auto text-center">{activeProject.excerpt}</p>
+
+            <div className="flex flex-wrap justify-center items-center gap-3 mt-7">
+              {activeProject.liveLink && (
+                <a href={activeProject.liveLink} target="_blank" rel="noreferrer" className="inline-flex items-center gap-2 px-7 py-3.5 rounded-full bg-foreground text-background text-sm font-semibold hover:opacity-85 transition-opacity">
+                  <ExternalLink size={16} />
+                  Live Preview
+                </a>
+              )}
+              {activeProject.githubLink && (
+                <a href={activeProject.githubLink} target="_blank" rel="noreferrer" className="inline-flex items-center gap-2 px-7 py-3.5 rounded-full border border-foreground/20 text-sm font-semibold hover:opacity-70 transition-opacity">
+                  <Github size={16} />
+                  Source Code
+                </a>
+              )}
+            </div>
+            <div className="flex flex-wrap justify-center gap-2 mt-5">
+              {activeProject.metrics.map((metric: string) => (
+                <span key={metric} className="font-mono text-[10px] tracking-[0.12em] uppercase px-3 py-1.5 rounded-full border border-foreground/20">
+                  {metric}
+                </span>
+              ))}
+            </div>
+
+            <div className="grid grid-cols-1 lg:grid-cols-12 gap-10 mt-12 pb-8">
+              <article className="lg:col-span-12">
+
+                {/* If rich fullSpecs exist */}
+                {activeProject.fullSpecs ? (
+                  <div className="flex flex-col">
+                    {activeProject.fullSpecs.problem && (
+                      <div id="pj-problem" className="border-t border-foreground/10 pt-8 scroll-mt-24">
+                        <h3 className="font-mono text-[11px] tracking-[0.2em] uppercase opacity-50 mb-4">The business problem</h3>
+                        <p className="text-lg opacity-90 leading-relaxed italic border-l-2 border-black/25 pl-5">{activeProject.fullSpecs.problem}</p>
                       </div>
+                    )}
+
+                    {activeProject.fullSpecs.keyFindings && (
+                      <div id="pj-findings" className="mt-12 scroll-mt-24">
+                        <h3 className="font-mono text-[11px] tracking-[0.2em] uppercase opacity-50">Key findings</h3>
+
+                        <div className="grid grid-cols-2 md:grid-cols-4 gap-px bg-foreground/10 rounded-[1.25rem] overflow-hidden mt-5 border border-foreground/10">
+                          {activeProject.fullSpecs.keyFindings.metrics.map((m: any, i: number) => (
+                            <div key={i} className="bg-card p-5 md:p-6 min-w-0">
+                              <span className="font-mono text-lg md:text-2xl font-semibold tracking-tight leading-none block">{m.value}</span>
+                              <span className="block font-mono text-[10px] tracking-[0.12em] uppercase opacity-50 mt-2 leading-snug">{m.label}</span>
+                            </div>
+                          ))}
+                        </div>
 
                       {activeProject.fullSpecs.keyFindings.insightsList && (
-                        <div className="flex flex-col gap-8 my-4">
+                        <div className="flex flex-col gap-4 mt-6">
                           {activeProject.fullSpecs.keyFindings.insightsList.map((insight: any, i: number) => (
-                            <div key={i} className="flex flex-col gap-2 p-4 bg-background/5 border border-background/10 rounded-lg">
-                              <h4 className="text-lg md:text-xl font-bold tracking-tight mb-2 text-balance">{insight.title}</h4>
-                              <p className="text-sm md:text-base opacity-80 leading-relaxed"><span className="font-semibold uppercase tracking-widest text-xs opacity-60 mr-2">Finding:</span> {insight.finding}</p>
-                              <p className="text-sm md:text-base opacity-80 leading-relaxed"><span className="font-semibold uppercase tracking-widest text-xs opacity-60 mr-2">Impact:</span> {insight.impact}</p>
-                              <p className="text-sm md:text-base opacity-90 leading-relaxed mt-2"><span className="font-semibold uppercase tracking-widest text-xs mr-2">💡 Implication:</span> {insight.implication}</p>
+                            <div key={i} className="rounded-[1.25rem] bg-card border border-foreground/10 p-5 md:p-6">
+                              <h4 className="text-lg md:text-xl font-semibold tracking-tight mb-3 text-balance">{insight.title}</h4>
+                              <p className="text-sm md:text-base text-zinc-600 leading-relaxed"><span className="font-semibold uppercase tracking-widest text-xs opacity-50 mr-2">Finding:</span> {insight.finding}</p>
+                              <p className="text-sm md:text-base text-zinc-600 leading-relaxed mt-1"><span className="font-semibold uppercase tracking-widest text-xs opacity-50 mr-2">Impact:</span> {insight.impact}</p>
+                              <p className="text-sm md:text-base leading-relaxed mt-3"><span className="font-semibold uppercase tracking-widest text-xs mr-2">Implication:</span> {insight.implication}</p>
                             </div>
                           ))}
                         </div>
                       )}
 
                       {activeProject.fullSpecs.keyFindings.table && (
-                        <div className="overflow-x-auto">
-                          <table className="w-full text-left text-sm">
+                        <div id="pj-table" className="mt-6 rounded-[1.25rem] border border-foreground/10 overflow-hidden scroll-mt-24">
+                          <table className="w-full text-left text-sm bg-card">
                             <thead>
-                              <tr className="border-b border-background/20 opacity-70">
+                              <tr className="bg-foreground/5 font-mono text-[10px] tracking-[0.14em] uppercase opacity-60">
                                 {(activeProject.fullSpecs.keyFindings.tableHeaders || ["Funnel Stage", "Sessions Lost", "Revenue Impact", "Priority"]).map((header: string, idx: number) => (
-                                  <th key={idx} className="pb-3 font-semibold uppercase tracking-widest whitespace-nowrap pr-4">{header}</th>
+                                  <th key={idx} className="px-4 md:px-6 py-3 font-medium whitespace-nowrap">{header}</th>
                                 ))}
                               </tr>
                             </thead>
                             <tbody>
                               {activeProject.fullSpecs.keyFindings.table.map((row: any, i: number) => (
-                                <tr key={i} className="border-b border-background/10">
-                                  <td className="py-4 pr-4">{row.stage}</td>
-                                  <td className="py-4 pr-4 font-mono">{row.lost}</td>
-                                  <td className="py-4 pr-4 font-mono">{row.impact}</td>
-                                  <td className="py-4 pr-4">{row.priority}</td>
+                                <tr key={i} className="border-t border-foreground/10">
+                                  <td className="px-4 md:px-6 py-4 font-medium">{row.stage}</td>
+                                  <td className="px-4 md:px-6 py-4 font-mono">{row.lost}</td>
+                                  <td className="px-4 md:px-6 py-4 font-mono font-semibold">{row.impact}</td>
+                                  <td className="px-4 md:px-6 py-4 font-mono text-xs">{row.priority}</td>
                                 </tr>
                               ))}
                             </tbody>
@@ -462,53 +646,69 @@ function Projects() {
                         </div>
                       )}
 
-                      <div className="flex flex-col gap-4 mt-2">
-                        <p className="text-base leading-relaxed opacity-90">{activeProject.fullSpecs.keyFindings.insight}</p>
-                        <p className="text-sm font-semibold uppercase tracking-widest text-background bg-foreground w-fit px-3 py-1">{activeProject.fullSpecs.keyFindings.action}</p>
+                      <div className="flex flex-col gap-4 mt-6">
+                        <p className="text-base md:text-lg text-foreground/80 leading-relaxed">{activeProject.fullSpecs.keyFindings.insight}</p>
+                        <p className="font-mono text-xs inline-block w-fit px-4 py-2 rounded-lg bg-foreground text-background">{activeProject.fullSpecs.keyFindings.action}</p>
                       </div>
                     </div>
                   )}
 
-                  {activeProject.fullSpecs.solution && (
-                    <div>
-                      <h3 className="text-sm font-bold uppercase tracking-widest mb-4 opacity-50">What It Solves</h3>
-                      <p className="text-lg opacity-90 leading-relaxed">{activeProject.fullSpecs.solution}</p>
-                    </div>
-                  )}
-                  {activeProject.fullSpecs.howItWorks && (
-                    <div>
-                      <h3 className="text-sm font-bold uppercase tracking-widest mb-4 opacity-50">How It Works</h3>
-                      <p className="text-lg opacity-90 leading-relaxed">{activeProject.fullSpecs.howItWorks}</p>
-                    </div>
-                  )}
-                  {activeProject.fullSpecs.specs && (
-                    <div>
-                      <h3 className="text-sm font-bold uppercase tracking-widest mb-4 opacity-50">Performance & Impact</h3>
-                      <ul className="list-disc pl-6 flex flex-col gap-3 text-lg opacity-90">
-                        {activeProject.fullSpecs.specs.map((spec: string, idx: number) => (
-                          <li key={idx} className="leading-relaxed">{spec}</li>
+                    {activeProject.fullSpecs.solution && (
+                      <div className="mt-12">
+                        <h3 className="font-mono text-[11px] tracking-[0.2em] uppercase opacity-50 mb-4">What it solves</h3>
+                        <p className="text-lg text-foreground/80 leading-relaxed">{activeProject.fullSpecs.solution}</p>
+                      </div>
+                    )}
+                    {activeProject.fullSpecs.howItWorks && (
+                      <div className="mt-10">
+                        <h3 className="font-mono text-[11px] tracking-[0.2em] uppercase opacity-50 mb-4">How it works</h3>
+                        <p className="text-lg text-foreground/80 leading-relaxed">{activeProject.fullSpecs.howItWorks}</p>
+                      </div>
+                    )}
+                    {activeProject.fullSpecs.specs && (
+                      <div id="pj-impact" className="mt-12 scroll-mt-24">
+                        <h3 className="font-mono text-[11px] tracking-[0.2em] uppercase opacity-50">Performance & impact</h3>
+                        <div className="mt-2 border-t border-foreground/10 lg:grid lg:grid-cols-2 lg:gap-x-12">
+                          {activeProject.fullSpecs.specs.map((spec: string, idx: number) => (
+                            <div key={idx} className="flex gap-6 py-6 border-b border-foreground/10">
+                              <span className="font-mono text-sm opacity-40">{String(idx + 1).padStart(2, "0")}</span>
+                              <p className="text-lg leading-relaxed opacity-90">{spec}</p>
+                            </div>
+                          ))}
+                        </div>
+                      </div>
+                    )}
+                  </div>
+                ) : (
+                  /* Fallback for simple details */
+                  activeProject.details && (
+                    <div id="pj-impact" className="mt-12 scroll-mt-24">
+                      <h3 className="font-mono text-[11px] tracking-[0.2em] uppercase opacity-50">Technical specifications</h3>
+                      <div className="mt-2 border-t border-foreground/10 lg:grid lg:grid-cols-2 lg:gap-x-12">
+                        {activeProject.details.map((detail: string, idx: number) => (
+                          <div key={idx} className="flex gap-6 py-6 border-b border-foreground/10">
+                            <span className="font-mono text-sm opacity-40">{String(idx + 1).padStart(2, "0")}</span>
+                            <p className="text-lg leading-relaxed opacity-90">{detail}</p>
+                          </div>
                         ))}
-                      </ul>
+                      </div>
                     </div>
-                  )}
-                </div>
-              ) : (
-                /* Fallback for simple details */
-                activeProject.details && (
-                  <>
-                    <h3 className="text-sm font-bold uppercase tracking-widest mb-6 border-b border-background/20 pb-4">Technical Specifications</h3>
-                    <ul className="list-disc pl-6 flex flex-col gap-4 text-lg opacity-80">
-                      {activeProject.details.map((detail: string, idx: number) => (
-                        <li key={idx} className="leading-relaxed">{detail}</li>
-                      ))}
-                    </ul>
-                  </>
-                )
-              )}
+                  )
+                )}
+              </article>
             </div>
-          )}
+
+            <div className="border-t border-foreground/10 mt-4 py-8 flex justify-between items-center gap-4">
+              <button onClick={() => stepProject(-1)} className="text-sm font-semibold hover:opacity-70 transition-opacity text-left">
+                ← Prev · {filteredProjects[(activeIdx - 1 + filteredProjects.length) % filteredProjects.length]?.title}
+              </button>
+              <button onClick={() => stepProject(1)} className="text-sm font-semibold hover:opacity-70 transition-opacity text-right">
+                Next · {filteredProjects[(activeIdx + 1) % filteredProjects.length]?.title} →
+              </button>
+            </div>
+          </div>
         </div>
-      </div>
+      )}
     </div>
   );
 }

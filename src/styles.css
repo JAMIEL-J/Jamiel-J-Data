@@ -26,8 +26,8 @@
   --color-ring: var(--accent);
   --color-ring-offset-background: var(--background);
 
-  --font-display: "DM Sans", "Google Sans", ui-sans-serif, system-ui, sans-serif;
-  --font-sans: "DM Sans", "Google Sans", ui-sans-serif, system-ui, sans-serif;
+  --font-display: "Google Sans Flex", "DM Sans", "Google Sans", ui-sans-serif, system-ui, sans-serif;
+  --font-sans: "Google Sans Flex", "DM Sans", "Google Sans", ui-sans-serif, system-ui, sans-serif;
   --font-mono: "JetBrains Mono", ui-monospace, monospace;
 
   --radius-sm: 4px;
@@ -233,4 +233,33 @@ html.dark .theme-inverse {
   --accent: oklch(0.12 0 0);
   --accent-foreground: oklch(0.972 0 0);
   --border: oklch(0.88 0 0);
+}
+
+/* Word-reel mask for the analyst heading — bleed padded, margin-compensated
+   so outer dimensions match plain text exactly (no layout shift, no descender clip) */
+/* Projects filter bar — slides away once scrolled past the header */
+.pj-filters {
+  transition: transform 0.45s cubic-bezier(0.16, 1, 0.3, 1), opacity 0.3s;
+}
+.pj-filters-hidden {
+  transform: translateY(-110%);
+  opacity: 0;
+  pointer-events: none;
+}
+
+/* About page type — Google Sans Flex, light body copy */
+.about-container {
+  font-family: "Google Sans Flex", "DM Sans", "Google Sans", ui-sans-serif, system-ui, sans-serif;
+}
+
+.tw-mask {
+  display: inline-block;
+  overflow: hidden;
+  vertical-align: top;
+  padding: 0.09em 0 0.16em;
+  margin: -0.09em 0 -0.16em;
+}
+.tw-word {
+  display: inline-block;
+  will-change: transform;
 }

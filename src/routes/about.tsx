@@ -1,8 +1,7 @@
-import { createFileRoute } from "@tanstack/react-router";
+import { createFileRoute, Link } from "@tanstack/react-router";
 import { useEffect } from "react";
 import gsap from "gsap";
 import { ScrollTrigger } from "gsap/ScrollTrigger";
-import { Database, Terminal, LineChart, Code2, Server, Cloud, BrainCircuit, BarChart3, FileJson, PieChart } from "lucide-react";
 
 gsap.registerPlugin(ScrollTrigger);
 
@@ -16,263 +15,228 @@ function About() {
     if (prefersReduced) return;
 
     const ctx = gsap.context(() => {
+      gsap.ticker.lagSmoothing(0);
+
+      // Hero: masked line rises (reuses global tw-mask/tw-word, transform-only)
+      gsap.fromTo(
+        ".about-line",
+        { yPercent: 110 },
+        { yPercent: 0, duration: 0.9, stagger: 0.1, ease: "power4.out", delay: 0.05, overwrite: "auto" }
+      );
       gsap.fromTo(
         ".about-hero",
-        { y: 80, opacity: 0 },
-        { y: 0, opacity: 1, duration: 1.2, stagger: 0.1, ease: "power4.out" }
+        { y: 34, opacity: 0 },
+        { y: 0, opacity: 1, duration: 0.7, stagger: 0.08, ease: "power3.out", delay: 0.15, overwrite: "auto" }
       );
 
-      // Parallax text
-      gsap.to(".parallax-bg-text", {
-        y: -150,
-        ease: "none",
-        scrollTrigger: {
-          trigger: ".about-container",
-          start: "top top",
+      // Marquee — scrub-free loop, paused while off-screen
+      const marquee = document.querySelector<HTMLElement>(".about-marquee-inner");
+      if (marquee) {
+        const loop = gsap.to(marquee, { xPercent: -50, duration: 26, ease: "none", repeat: -1 });
+        ScrollTrigger.create({
+          trigger: marquee,
+          start: "top bottom",
           end: "bottom top",
-          scrub: true,
-        }
-      });
+          onEnter: () => loop.play(),
+          onLeave: () => loop.pause(),
+          onEnterBack: () => loop.play(),
+          onLeaveBack: () => loop.pause(),
+        });
+      }
 
-      // Fade in sections on scroll
-      gsap.utils.toArray(".scroll-fade").forEach((el: any) => {
-        gsap.fromTo(el,
-          { opacity: 0, y: 50 },
+      // Shared once-reveals (transform/opacity only)
+      gsap.utils.toArray<HTMLElement>(".reveal:not(.arsenal-row)").forEach((el) => {
+        el.style.willChange = "transform, opacity";
+        gsap.fromTo(
+          el,
+          { y: 26, opacity: 0 },
           {
-            opacity: 1, y: 0, duration: 1,
+            y: 0,
+            opacity: 1,
+            duration: 0.7,
             ease: "power3.out",
-            scrollTrigger: {
-              trigger: el,
-              start: "top 85%",
-              once: true
-            }
+            overwrite: "auto",
+            scrollTrigger: { trigger: el, start: "top 86%", once: true },
+            onComplete: () => {
+              el.style.willChange = "auto";
+            },
           }
         );
       });
 
-      // Text Reveal
-      gsap.utils.toArray(".text-reveal").forEach((el: any) => {
-        gsap.fromTo(el,
-          { opacity: 0, y: 30 },
-          {
-            opacity: 1, y: 0, duration: 1,
-            ease: "power3.out",
-            scrollTrigger: {
-              trigger: el,
-              start: "top 90%",
-            }
-          }
-        );
-      });
-
-      // Tool cards stagger
-      gsap.utils.toArray(".tools-section").forEach((section: any) => {
-        const cards = section.querySelectorAll(".tool-card");
-        gsap.fromTo(cards,
-          { opacity: 0, y: 30 },
-          {
-            opacity: 1, y: 0, duration: 0.8, stagger: 0.1,
-            ease: "back.out(1.2)",
-            scrollTrigger: {
-              trigger: section,
-              start: "top 85%",
-            }
-          }
-        );
-      });
-
-      // Clean up previous GSAP triggers if they exist
-      ScrollTrigger.getAll().forEach(t => t.refresh());
-
+      // Arsenal rows — alternate slide direction per row (y on mobile), once
       const isMobile = window.innerWidth < 768;
-
-      // Slow motion slide in from left
-      gsap.utils.toArray(".slide-left-card").forEach((el: any) => {
-        gsap.fromTo(el,
-          { opacity: 0, x: isMobile ? 0 : -100, y: isMobile ? 50 : 0 },
+      gsap.utils.toArray<HTMLElement>(".arsenal-row").forEach((el, i) => {
+        el.style.willChange = "transform, opacity";
+        const fromX = isMobile ? 0 : i % 2 === 0 ? -48 : 48;
+        gsap.fromTo(
+          el,
+          { x: fromX, y: isMobile ? 26 : 0, opacity: 0 },
           {
-            opacity: 1, x: 0, y: 0, duration: 1.5,
+            x: 0,
+            y: 0,
+            opacity: 1,
+            duration: 0.7,
             ease: "power3.out",
-            scrollTrigger: {
-              trigger: el,
-              start: "top 85%",
-            }
+            overwrite: "auto",
+            scrollTrigger: { trigger: el, start: "top 88%", once: true },
+            onComplete: () => {
+              el.style.willChange = "auto";
+            },
           }
         );
       });
-
-      // Slow motion slide in from right
-      gsap.utils.toArray(".slide-right-card").forEach((el: any) => {
-        gsap.fromTo(el,
-          { opacity: 0, x: isMobile ? 0 : 100, y: isMobile ? 50 : 0 },
-          {
-            opacity: 1, x: 0, y: 0, duration: 1.5,
-            ease: "power3.out",
-            scrollTrigger: {
-              trigger: el,
-              start: "top 85%",
-            }
-          }
-        );
-      });
-
     });
 
     return () => ctx.revert();
   }, []);
 
   return (
-    <div className="about-container relative min-h-[100dvh] overflow-hidden bg-background">
+    <div className="about-container relative min-h-[100dvh] bg-background text-foreground">
 
-      {/* Huge background parallax text */}
-      <div className="parallax-bg-text absolute top-[20%] left-0 w-full text-center pointer-events-none opacity-[0.03] z-0">
-        <h1 className="text-[25vw] font-black uppercase tracking-tighter leading-none whitespace-nowrap">
-          JAMIEL
+      {/* 01 — AGENCY HERO */}
+      <div className="relative pt-32 md:pt-40 pb-4 px-4 md:px-12 max-w-[1400px] mx-auto z-10">
+        <p className="about-hero font-mono text-[11px] tracking-[0.18em] uppercase opacity-50">About — 01 / Profile</p>
+        <h1 className="text-[17vw] md:text-[10rem] font-bold leading-[0.85] tracking-tighter uppercase mt-4">
+          <span className="tw-mask"><span className="tw-word about-line">Jamiel</span></span>{" "}
+          <span className="tw-mask"><span className="tw-word about-line">J</span></span>
         </h1>
+        <p className="about-hero text-4xl md:text-6xl font-semibold tracking-tighter leading-none mt-2">
+          Data Analyst <span className="opacity-30">out of Pudukkottai.</span>
+        </p>
+        <div className="about-hero grid grid-cols-2 md:grid-cols-4 gap-6 border-t border-foreground/10 mt-10 pt-5 font-mono text-[11px] tracking-[0.12em] uppercase opacity-70">
+          <div><p className="opacity-50 mb-1">Based</p><p className="font-semibold opacity-100">Pudukkottai, Tamil Nadu</p></div>
+          <div><p className="opacity-50 mb-1">Degree</p><p className="font-semibold opacity-100">B.Tech · IT, M.I.E.T</p></div>
+          <div><p className="opacity-50 mb-1">Role</p><p className="font-semibold opacity-100">Data Analyst</p></div>
+          <div><p className="opacity-50 mb-1">Status</p><p className="font-semibold opacity-100 flex items-center gap-2"><span className="w-1.5 h-1.5 rounded-full bg-foreground animate-pulse"></span>Applying now</p></div>
+        </div>
       </div>
 
-      <div className="relative pt-48 pb-24 px-6 md:px-12 max-w-[1400px] mx-auto z-10">
-        <div className="mb-48 pt-12 scroll-fade">
-          <div className="flex justify-center mb-24 md:mb-32">
-            <h2 className="text-5xl md:text-7xl lg:text-[9rem] font-black leading-[0.9] tracking-tighter uppercase text-center">
-              Who I am
-            </h2>
-          </div>
+      {/* 02 — MANIFESTO (same copy) */}
+      <div className="relative px-4 md:px-12 max-w-[1400px] mx-auto z-10 pt-16 md:pt-28">
+        <div className="grid grid-cols-1 md:grid-cols-12 gap-8">
+          <p className="font-mono text-[11px] tracking-[0.18em] uppercase opacity-40 md:col-span-3">02 / In short</p>
+            <h2 className="reveal md:col-span-9 text-2xl md:text-[2.9rem] font-semibold uppercase tracking-tighter leading-[1.02]">
+            I&apos;m Jamiel — most people know me as Jam. I graduated with a B.Tech in Information Technology from M.I.E.T, and I work as a Data Analyst out of Pudukkottai, Tamil Nadu.
+          </h2>
+        </div>
+      </div>
 
-          <h1 className="text-2xl md:text-6xl font-black uppercase tracking-tighter leading-[0.9] mb-12 md:mb-20 max-w-6xl text-reveal">
-            I'm Jamiel — most people know me as Jam. I graduated with a B.Tech in Information Technology from M.I.E.T, and I work as a Data Analyst out of Pudukkottai, Tamil Nadu.
-          </h1>
+      {/* Kinetic strip — reuses the philosophy line */}
+      <div className="border-y border-foreground/10 mt-14 md:mt-20 py-4 overflow-hidden whitespace-nowrap flex items-center">
+        <div className="about-marquee-inner flex font-mono text-xs tracking-[0.2em] uppercase opacity-50">
+          <span className="pr-8">What decision does this change? · What decision does this change? · What decision does this change? ·&nbsp;</span>
+          <span className="pr-8">What decision does this change? · What decision does this change? · What decision does this change? ·&nbsp;</span>
+        </div>
+      </div>
 
-          <div className="mt-24 w-full grid grid-cols-1 md:grid-cols-12 gap-8 md:gap-12 text-reveal">
-
-            {/* Editorial Side Column */}
-            <div className="md:col-span-3 lg:col-span-4 flex flex-col md:items-end justify-start pt-2">
-              <div className="text-xs font-bold uppercase tracking-widest opacity-40 md:text-right flex items-center md:items-start gap-4 md:flex-col">
-                <div className="md:hidden w-8 h-px bg-foreground/30"></div>
-                Origin Story
-              </div>
-              <div className="hidden md:block w-px h-24 bg-gradient-to-b from-foreground/20 to-transparent mt-6 mr-10"></div>
-            </div>
-
-            {/* Main Content Area */}
-            <div className="md:col-span-9 lg:col-span-8 md:border-l border-foreground/10 md:pl-10">
-              <p className="text-lg md:text-2xl opacity-90 leading-[1.6] font-normal tracking-tight max-w-3xl">
-                My first real exposure to the job was as a <span className="font-bold border-b border-foreground/30 pb-0.5">Data Analyst Trainee at BY8LABS AI</span>, where I gained working proficiency in Python, Pandas, and NumPy through structured data science training focused on exploratory data analysis workflows and data validation techniques.
-              </p>
-              <p className="text-lg md:text-2xl opacity-70 leading-[1.6] font-normal tracking-tight mt-6 max-w-3xl">
-                Built foundational Streamlit dashboards to visualise KPI metrics, developing practical understanding of end-to-end data-to-dashboard delivery pipelines.
-              </p>
-
-              {/* Premium Pull-Quote */}
-              <div className="mt-10 relative bg-foreground/[0.03] text-foreground p-6 md:p-8 rounded-2xl border border-foreground/10 max-w-3xl overflow-hidden">
-                <div className="absolute top-0 left-0 w-1 h-full bg-foreground/30"></div>
-                <p className="text-base md:text-lg font-medium opacity-80 leading-relaxed italic">
-                  "That's a fresher-level internship, and I'm not going to dress it up as more than it was — but it's where I confirmed that I actually like this work, not just the idea of it."
-                </p>
-              </div>
-            </div>
-
+      {/* 03 — ORIGIN (same copy) */}
+      <div className="relative px-4 md:px-12 max-w-[1400px] mx-auto z-10 pt-16 md:pt-28 grid grid-cols-1 md:grid-cols-12 gap-8">
+        <div className="md:col-span-3">
+          <div className="md:sticky md:top-24">
+            <p className="font-mono text-[11px] tracking-[0.18em] uppercase opacity-40">03 / Origin story</p>
+            <p className="font-mono text-[11px] tracking-[0.14em] uppercase opacity-40 mt-2">BY8LABS AI · Trainee</p>
           </div>
         </div>
-
-        {/* Liquid Glass Philosophy Section (Zig-Zag, Centered Content) */}
-        <div className="relative w-full max-w-[1400px] mx-auto py-24 md:py-32 mb-24 z-10 flex flex-col gap-16 md:gap-32 px-4 md:px-8">
-
-          {/* Ambient Refraction Orbs (Monochrome) */}
-          <div className="absolute inset-0 pointer-events-none overflow-hidden z-0 flex justify-center items-center opacity-60">
-            <div className="w-[40vw] h-[40vw] bg-foreground/10 rounded-full blur-[100px] absolute top-0 left-10"></div>
-            <div className="w-[35vw] h-[35vw] bg-foreground/10 rounded-full blur-[120px] absolute bottom-10 right-10"></div>
-          </div>
-
-          {/* Glass Card 1 - Left Aligned */}
-          <div className="relative z-10 w-full md:w-[95%] lg:w-[90%] mr-auto rounded-[2rem] md:rounded-[3rem] p-6 md:p-16 lg:p-24 flex flex-col justify-start bg-white/40 dark:bg-black/40 backdrop-blur-[50px] border border-white/50 dark:border-white/10 shadow-[inset_0_1px_1px_rgba(255,255,255,0.4)] dark:shadow-[inset_0_1px_1px_rgba(255,255,255,0.1)] slide-left-card overflow-hidden group text-center items-center">
-            <div className="absolute inset-0 bg-gradient-to-br from-foreground/5 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-700 pointer-events-none"></div>
-
-            <h2 className="text-3xl sm:text-4xl md:text-5xl lg:text-7xl font-black uppercase tracking-tighter leading-none mb-8 md:mb-12 relative z-10 text-balance md:whitespace-nowrap">
-              How I think about the job
-            </h2>
-
-            <div className="flex flex-col gap-4 relative z-10 max-w-[1000px] mx-auto items-center">
-              <p className="text-lg md:text-3xl font-bold leading-tight tracking-tight text-balance">
-                A dashboard that looks good and tells you nothing is worse than no dashboard.
-              </p>
-              <p className="text-base md:text-xl opacity-80 leading-relaxed font-normal text-balance">
-                My default question on any analysis is <span className="font-semibold italic border-b border-foreground/30 pb-0.5">"what decision does this change?"</span> If I can't answer that, I don't ship the chart. Whether tuning a fraud model for recall over false alarms or tracing exact revenue leaks, the goal is actionable clarity.
-              </p>
-            </div>
-          </div>
-
-          {/* Glass Card 2 - Right Aligned */}
-          <div className="relative z-10 w-full md:w-[95%] lg:w-[90%] ml-auto rounded-[2rem] md:rounded-[3rem] p-6 md:p-16 lg:p-24 flex flex-col justify-start bg-white/40 dark:bg-black/40 backdrop-blur-[50px] border border-white/50 dark:border-white/10 shadow-[inset_0_1px_1px_rgba(255,255,255,0.4)] dark:shadow-[inset_0_1px_1px_rgba(255,255,255,0.1)] slide-right-card overflow-hidden group text-center items-center">
-            <div className="absolute inset-0 bg-gradient-to-bl from-foreground/5 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-700 pointer-events-none"></div>
-
-            <h2 className="text-3xl sm:text-4xl md:text-5xl lg:text-7xl font-black uppercase tracking-tighter leading-none mb-8 md:mb-12 relative z-10 text-balance md:whitespace-nowrap">
-              Where I'm headed
-            </h2>
-
-            <div className="flex flex-col gap-4 relative z-10 max-w-[1000px] mx-auto items-center">
-              <p className="text-lg md:text-3xl font-bold leading-tight tracking-tight text-balance">
-                Data Analyst is where I'm strongest right now, and it's what I'm applying for.
-              </p>
-              <p className="text-base md:text-xl opacity-80 leading-relaxed font-normal text-balance">
-                ML Analyst work is a close second, though my model evaluations have been on practice datasets, not production systems at scale. Longer term, I'm building towards AI engineering—which is exactly why I've built full applications instead of stopping at Jupyter notebooks.
-              </p>
-            </div>
-          </div>
-
+        <div className="md:col-span-9 md:pl-[2vw] md:border-l md:border-foreground/10">
+          <p className="reveal text-lg md:text-2xl font-light leading-[1.6] tracking-tight max-w-3xl">
+            My first real exposure to the job was as a <span className="font-bold border-b border-foreground/30 pb-0.5">Data Analyst Trainee at BY8LABS AI</span>, where I gained working proficiency in Python, Pandas, and NumPy through structured data science training focused on exploratory data analysis workflows and data validation techniques.
+          </p>
+          <p className="reveal text-lg md:text-2xl font-light leading-[1.6] tracking-tight mt-6 max-w-3xl opacity-70">
+            Built foundational Streamlit dashboards to visualise KPI metrics, developing practical understanding of end-to-end data-to-dashboard delivery pipelines.
+          </p>
+          <blockquote className="reveal border-l-2 border-foreground/40 pl-5 mt-8 max-w-3xl">
+            <p className="text-base md:text-lg font-light italic opacity-80 leading-relaxed">
+              &quot;That&apos;s a fresher-level internship, and I&apos;m not going to dress it up as more than it was — but it&apos;s where I confirmed that I actually like this work, not just the idea of it.&quot;
+            </p>
+          </blockquote>
         </div>
+      </div>
 
-        <div className="scroll-fade pb-48 w-full max-w-[1400px] mx-auto px-6 md:px-12 mt-12">
-          <div className="flex items-center gap-4 mb-16">
+      {/* 04 — PHILOSOPHY CHAPTER (same copy, hairline, no card) */}
+      <section className="border-t border-foreground/10 mt-16 md:mt-28 relative overflow-hidden">
+        <div aria-hidden className="pointer-events-none select-none absolute -top-6 right-2 md:right-12 text-[30vw] md:text-[11rem] leading-none font-black text-transparent opacity-10" style={{ WebkitTextStroke: "1px currentColor" }}>01</div>
+        <div className="max-w-[1400px] mx-auto px-4 md:px-12 py-16 md:py-28 grid grid-cols-1 md:grid-cols-12 gap-8">
+          <p className="font-mono text-[11px] tracking-[0.18em] uppercase opacity-40 md:col-span-3">04 / How I think<br />about the job</p>
+          <div className="md:col-span-9">
+            <p className="reveal text-3xl md:text-5xl font-semibold tracking-tighter leading-[1.02] max-w-[22ch]">
+              A dashboard that looks good and tells you nothing is worse than no dashboard.
+            </p>
+            <p className="reveal text-base md:text-xl opacity-80 leading-relaxed font-light mt-6 max-w-[65ch]">
+              My default question on any analysis is <span className="font-semibold italic border-b border-foreground/30 pb-0.5">&quot;what decision does this change?&quot;</span> If I can&apos;t answer that, I don&apos;t ship the chart. Whether tuning a fraud model for recall over false alarms or tracing exact revenue leaks, the goal is actionable clarity.
+            </p>
+          </div>
+        </div>
+      </section>
+
+      {/* 05 — DIRECTION CHAPTER, dark inverse (same copy, no card) */}
+      <section className="bg-zinc-950 text-white relative overflow-hidden">
+        <div aria-hidden className="pointer-events-none select-none absolute -top-6 left-2 md:left-12 text-[30vw] md:text-[11rem] leading-none font-black text-transparent opacity-15" style={{ WebkitTextStroke: "1px rgba(255,255,255,0.5)" }}>02</div>
+        <div className="max-w-[1400px] mx-auto px-4 md:px-12 py-16 md:py-28 grid grid-cols-1 md:grid-cols-12 gap-8">
+          <div className="md:col-span-9 order-2 md:order-1">
+            <p className="reveal text-3xl md:text-5xl font-semibold tracking-tighter leading-[1.02] max-w-[24ch]">
+              Data Analyst is where I&apos;m strongest <span className="text-white/40">right now.</span>
+            </p>
+            <p className="reveal text-base md:text-xl text-white/60 leading-relaxed font-light mt-6 max-w-[65ch]">
+              ML Analyst work is a close second, though my model evaluations have been on practice datasets, not production systems at scale. Longer term, I&apos;m building towards AI engineering—which is exactly why I&apos;ve built full applications instead of stopping at Jupyter notebooks.
+            </p>
+          </div>
+          <p className="font-mono text-[11px] tracking-[0.18em] uppercase text-white/40 md:col-span-3 order-1 md:order-2 md:text-right">05 / Where<br />I&apos;m headed</p>
+        </div>
+      </section>
+
+      {/* 06 — ARSENAL INDEX (same tools, same icons) */}
+      <section className="py-16 md:py-28 w-full max-w-[1400px] mx-auto px-4 md:px-12">
+          <div className="flex items-center gap-4 mb-10">
             <span className="w-2 h-2 rounded-full bg-foreground animate-pulse"></span>
-            <h2 className="text-sm font-bold uppercase tracking-widest opacity-50">
-              Technical Arsenal
+            <h2 className="font-mono text-[11px] tracking-[0.18em] uppercase opacity-50">
+              06 / Technical Arsenal
             </h2>
           </div>
 
-          <div className="flex flex-col border-t-2 border-foreground/20">
+          <div className="flex flex-col border-t-2 border-foreground/70">
             
             {/* Row 1: Languages & Analysis */}
-            <div className="py-10 md:py-16 border-b border-foreground/10 flex flex-col md:flex-row md:items-center gap-8 md:gap-24 hover:pl-4 md:hover:pl-8 transition-all duration-500 group cursor-default">
-              <h3 className="text-2xl md:text-4xl font-black uppercase tracking-tighter w-full md:w-[30%] opacity-40 group-hover:opacity-100 transition-opacity duration-500">
+            <div className="reveal arsenal-row py-8 md:py-10 border-b border-foreground/10 grid md:grid-cols-[280px_1fr] gap-4 items-center hover:pl-4 md:hover:pl-7 transition-all duration-500 group cursor-default">
+              <h3 className="text-xl md:text-2xl font-bold uppercase tracking-tighter opacity-40 group-hover:opacity-100 transition-opacity duration-500">
                 Languages &<br className="hidden md:block" /> Analysis
               </h3>
-              <div className="flex flex-wrap items-center gap-x-10 gap-y-6 w-full md:w-[70%]">
+              <div className="flex flex-wrap items-center gap-x-8 gap-y-4 w-full">
                 <div className="flex items-center gap-3">
-                  <img src="https://cdn.simpleicons.org/python" alt="Python" className="w-7 h-7 md:w-9 md:h-9 grayscale group-hover:grayscale-0 opacity-60 group-hover:opacity-100 transition-all duration-500" />
+                  <img loading="lazy" decoding="async" src="https://cdn.simpleicons.org/python" alt="Python" className="w-7 h-7 md:w-9 md:h-9 grayscale group-hover:grayscale-0 opacity-60 group-hover:opacity-100 transition-all duration-500" />
                   <span className="text-xl md:text-2xl font-bold tracking-tight">Python</span>
                 </div>
                 <div className="flex items-center gap-3">
-                  <img src="https://cdn.simpleicons.org/pandas" alt="Pandas" className="w-7 h-7 md:w-9 md:h-9 grayscale group-hover:grayscale-0 opacity-60 group-hover:opacity-100 transition-all duration-500" />
+                  <img loading="lazy" decoding="async" src="https://cdn.simpleicons.org/pandas" alt="Pandas" className="w-7 h-7 md:w-9 md:h-9 grayscale group-hover:grayscale-0 opacity-60 group-hover:opacity-100 transition-all duration-500" />
                   <span className="text-xl md:text-2xl font-bold tracking-tight">Pandas</span>
                 </div>
                 <div className="flex items-center gap-3">
-                  <img src="https://cdn.simpleicons.org/numpy" alt="NumPy" className="w-7 h-7 md:w-9 md:h-9 grayscale group-hover:grayscale-0 opacity-60 group-hover:opacity-100 transition-all duration-500" />
+                  <img loading="lazy" decoding="async" src="https://cdn.simpleicons.org/numpy" alt="NumPy" className="w-7 h-7 md:w-9 md:h-9 grayscale group-hover:grayscale-0 opacity-60 group-hover:opacity-100 transition-all duration-500" />
                   <span className="text-xl md:text-2xl font-bold tracking-tight">NumPy</span>
                 </div>
                 <div className="flex items-center gap-3">
-                  <img src="https://cdn.simpleicons.org/scikitlearn" alt="Scikit-learn" className="w-7 h-7 md:w-9 md:h-9 grayscale group-hover:grayscale-0 opacity-60 group-hover:opacity-100 transition-all duration-500" />
+                  <img loading="lazy" decoding="async" src="https://cdn.simpleicons.org/scikitlearn" alt="Scikit-learn" className="w-7 h-7 md:w-9 md:h-9 grayscale group-hover:grayscale-0 opacity-60 group-hover:opacity-100 transition-all duration-500" />
                   <span className="text-xl md:text-2xl font-bold tracking-tight">Scikit-learn</span>
                 </div>
                 <div className="flex items-center gap-3">
-                  <img src="https://cdn.simpleicons.org/mysql" alt="MySQL" className="w-7 h-7 md:w-9 md:h-9 grayscale group-hover:grayscale-0 opacity-60 group-hover:opacity-100 transition-all duration-500" />
+                  <img loading="lazy" decoding="async" src="https://cdn.simpleicons.org/mysql" alt="MySQL" className="w-7 h-7 md:w-9 md:h-9 grayscale group-hover:grayscale-0 opacity-60 group-hover:opacity-100 transition-all duration-500" />
                   <span className="text-xl md:text-2xl font-bold tracking-tight">SQL</span>
                 </div>
                 <div className="flex items-center gap-3">
-                  <img src="https://cdn.simpleicons.org/r" alt="R" className="w-7 h-7 md:w-9 md:h-9 grayscale group-hover:grayscale-0 opacity-60 group-hover:opacity-100 transition-all duration-500" />
+                  <img loading="lazy" decoding="async" src="https://cdn.simpleicons.org/r" alt="R" className="w-7 h-7 md:w-9 md:h-9 grayscale group-hover:grayscale-0 opacity-60 group-hover:opacity-100 transition-all duration-500" />
                   <span className="text-xl md:text-2xl font-bold tracking-tight">R</span>
                 </div>
               </div>
             </div>
 
             {/* Row 2: BI & Visualization */}
-            <div className="py-10 md:py-16 border-b border-foreground/10 flex flex-col md:flex-row md:items-center gap-8 md:gap-24 hover:pl-4 md:hover:pl-8 transition-all duration-500 group cursor-default">
-              <h3 className="text-2xl md:text-4xl font-black uppercase tracking-tighter w-full md:w-[30%] opacity-40 group-hover:opacity-100 transition-opacity duration-500">
+            <div className="reveal arsenal-row py-8 md:py-10 border-b border-foreground/10 grid md:grid-cols-[280px_1fr] gap-4 items-center hover:pl-4 md:hover:pl-7 transition-all duration-500 group cursor-default">
+              <h3 className="text-xl md:text-2xl font-bold uppercase tracking-tighter opacity-40 group-hover:opacity-100 transition-opacity duration-500">
                 BI &<br className="hidden md:block" /> Visualization
               </h3>
-              <div className="flex flex-wrap items-center gap-x-10 gap-y-6 w-full md:w-[70%]">
+              <div className="flex flex-wrap items-center gap-x-8 gap-y-4 w-full">
                 <div className="flex items-center gap-3">
-                  <img src="https://www.svgrepo.com/show/354428/tableau-icon.svg" alt="Tableau" className="w-7 h-7 md:w-9 md:h-9 grayscale group-hover:grayscale-0 opacity-60 group-hover:opacity-100 transition-all duration-500" />
+                  <img loading="lazy" decoding="async" src="https://www.svgrepo.com/show/354428/tableau-icon.svg" alt="Tableau" className="w-7 h-7 md:w-9 md:h-9 grayscale group-hover:grayscale-0 opacity-60 group-hover:opacity-100 transition-all duration-500" />
                   <span className="text-xl md:text-2xl font-bold tracking-tight">Tableau</span>
                 </div>
                 <div className="flex items-center gap-3">
@@ -280,18 +244,18 @@ function About() {
                   <span className="text-xl md:text-2xl font-bold tracking-tight">Power BI</span>
                 </div>
                 <div className="flex items-center gap-3">
-                  <img src="https://cdn.simpleicons.org/streamlit" alt="Streamlit" className="w-7 h-7 md:w-9 md:h-9 grayscale group-hover:grayscale-0 opacity-60 group-hover:opacity-100 transition-all duration-500" />
+                  <img loading="lazy" decoding="async" src="https://cdn.simpleicons.org/streamlit" alt="Streamlit" className="w-7 h-7 md:w-9 md:h-9 grayscale group-hover:grayscale-0 opacity-60 group-hover:opacity-100 transition-all duration-500" />
                   <span className="text-xl md:text-2xl font-bold tracking-tight">Streamlit</span>
                 </div>
               </div>
             </div>
 
             {/* Row 3: Machine Learning */}
-            <div className="py-10 md:py-16 border-b border-foreground/10 flex flex-col md:flex-row md:items-center gap-8 md:gap-24 hover:pl-4 md:hover:pl-8 transition-all duration-500 group cursor-default">
-              <h3 className="text-2xl md:text-4xl font-black uppercase tracking-tighter w-full md:w-[30%] opacity-40 group-hover:opacity-100 transition-opacity duration-500">
+            <div className="reveal arsenal-row py-8 md:py-10 border-b border-foreground/10 grid md:grid-cols-[280px_1fr] gap-4 items-center hover:pl-4 md:hover:pl-7 transition-all duration-500 group cursor-default">
+              <h3 className="text-xl md:text-2xl font-bold uppercase tracking-tighter opacity-40 group-hover:opacity-100 transition-opacity duration-500">
                 Machine<br className="hidden md:block" /> Learning
               </h3>
-              <div className="flex flex-wrap items-center gap-x-10 gap-y-6 w-full md:w-[70%]">
+              <div className="flex flex-wrap items-center gap-x-8 gap-y-4 w-full">
                 <div className="flex items-center gap-3">
                   <span className="text-xl md:text-2xl font-bold tracking-tight opacity-60 group-hover:opacity-100 transition-all duration-500">LightGBM</span>
                 </div>
@@ -308,17 +272,17 @@ function About() {
             </div>
 
             {/* Row 4: Data & Cloud */}
-            <div className="py-10 md:py-16 border-b border-foreground/10 flex flex-col md:flex-row md:items-center gap-8 md:gap-24 hover:pl-4 md:hover:pl-8 transition-all duration-500 group cursor-default">
-              <h3 className="text-2xl md:text-4xl font-black uppercase tracking-tighter w-full md:w-[30%] opacity-40 group-hover:opacity-100 transition-opacity duration-500">
+            <div className="reveal arsenal-row py-8 md:py-10 border-b border-foreground/10 grid md:grid-cols-[280px_1fr] gap-4 items-center hover:pl-4 md:hover:pl-7 transition-all duration-500 group cursor-default">
+              <h3 className="text-xl md:text-2xl font-bold uppercase tracking-tighter opacity-40 group-hover:opacity-100 transition-opacity duration-500">
                 Data &<br className="hidden md:block" /> Cloud
               </h3>
-              <div className="flex flex-wrap items-center gap-x-10 gap-y-6 w-full md:w-[70%]">
+              <div className="flex flex-wrap items-center gap-x-8 gap-y-4 w-full">
                 <div className="flex items-center gap-3">
-                  <img src="https://cdn.simpleicons.org/snowflake" alt="Snowflake" className="w-7 h-7 md:w-9 md:h-9 grayscale group-hover:grayscale-0 opacity-60 group-hover:opacity-100 transition-all duration-500" />
+                  <img loading="lazy" decoding="async" src="https://cdn.simpleicons.org/snowflake" alt="Snowflake" className="w-7 h-7 md:w-9 md:h-9 grayscale group-hover:grayscale-0 opacity-60 group-hover:opacity-100 transition-all duration-500" />
                   <span className="text-xl md:text-2xl font-bold tracking-tight">Snowflake</span>
                 </div>
                 <div className="flex items-center gap-3">
-                  <img src="https://cdn.simpleicons.org/googlebigquery" alt="BigQuery" className="w-7 h-7 md:w-9 md:h-9 grayscale group-hover:grayscale-0 opacity-60 group-hover:opacity-100 transition-all duration-500" />
+                  <img loading="lazy" decoding="async" src="https://cdn.simpleicons.org/googlebigquery" alt="BigQuery" className="w-7 h-7 md:w-9 md:h-9 grayscale group-hover:grayscale-0 opacity-60 group-hover:opacity-100 transition-all duration-500" />
                   <span className="text-xl md:text-2xl font-bold tracking-tight">BigQuery</span>
                 </div>
                 <div className="flex items-center gap-3">
@@ -329,34 +293,44 @@ function About() {
             </div>
 
             {/* Row 5: Web & Workflow */}
-            <div className="py-10 md:py-16 border-b border-foreground/10 flex flex-col md:flex-row md:items-center gap-8 md:gap-24 hover:pl-4 md:hover:pl-8 transition-all duration-500 group cursor-default">
-              <h3 className="text-2xl md:text-4xl font-black uppercase tracking-tighter w-full md:w-[30%] opacity-40 group-hover:opacity-100 transition-opacity duration-500">
+            <div className="reveal arsenal-row py-8 md:py-10 border-b border-foreground/10 grid md:grid-cols-[280px_1fr] gap-4 items-center hover:pl-4 md:hover:pl-7 transition-all duration-500 group cursor-default">
+              <h3 className="text-xl md:text-2xl font-bold uppercase tracking-tighter opacity-40 group-hover:opacity-100 transition-opacity duration-500">
                 Web &<br className="hidden md:block" /> Workflow
               </h3>
-              <div className="flex flex-wrap items-center gap-x-10 gap-y-6 w-full md:w-[70%]">
+              <div className="flex flex-wrap items-center gap-x-8 gap-y-4 w-full">
                 <div className="flex items-center gap-3">
-                  <img src="https://cdn.simpleicons.org/fastapi" alt="FastAPI" className="w-7 h-7 md:w-9 md:h-9 grayscale group-hover:grayscale-0 opacity-60 group-hover:opacity-100 transition-all duration-500" />
+                  <img loading="lazy" decoding="async" src="https://cdn.simpleicons.org/fastapi" alt="FastAPI" className="w-7 h-7 md:w-9 md:h-9 grayscale group-hover:grayscale-0 opacity-60 group-hover:opacity-100 transition-all duration-500" />
                   <span className="text-xl md:text-2xl font-bold tracking-tight">FastAPI</span>
                 </div>
                 <div className="flex items-center gap-3">
-                  <img src="https://cdn.simpleicons.org/react" alt="React" className="w-7 h-7 md:w-9 md:h-9 grayscale group-hover:grayscale-0 opacity-60 group-hover:opacity-100 transition-all duration-500" />
+                  <img loading="lazy" decoding="async" src="https://cdn.simpleicons.org/react" alt="React" className="w-7 h-7 md:w-9 md:h-9 grayscale group-hover:grayscale-0 opacity-60 group-hover:opacity-100 transition-all duration-500" />
                   <span className="text-xl md:text-2xl font-bold tracking-tight">React</span>
                 </div>
                 <div className="flex items-center gap-3">
-                  <img src="https://cdn.simpleicons.org/git" alt="Git" className="w-7 h-7 md:w-9 md:h-9 grayscale group-hover:grayscale-0 opacity-60 group-hover:opacity-100 transition-all duration-500" />
+                  <img loading="lazy" decoding="async" src="https://cdn.simpleicons.org/git" alt="Git" className="w-7 h-7 md:w-9 md:h-9 grayscale group-hover:grayscale-0 opacity-60 group-hover:opacity-100 transition-all duration-500" />
                   <span className="text-xl md:text-2xl font-bold tracking-tight">Git</span>
                 </div>
                 <div className="flex items-center gap-3">
-                  <img src="https://cdn.simpleicons.org/jira" alt="Jira" className="w-7 h-7 md:w-9 md:h-9 grayscale group-hover:grayscale-0 opacity-60 group-hover:opacity-100 transition-all duration-500" />
+                  <img loading="lazy" decoding="async" src="https://cdn.simpleicons.org/jira" alt="Jira" className="w-7 h-7 md:w-9 md:h-9 grayscale group-hover:grayscale-0 opacity-60 group-hover:opacity-100 transition-all duration-500" />
                   <span className="text-xl md:text-2xl font-bold tracking-tight">Jira / Agile</span>
                 </div>
               </div>
             </div>
 
           </div>
-        </div>
+      </section>
 
-      </div>
+      {/* 07 — CTA (reuses the philosophy line) */}
+      <section className="border-t border-foreground/10">
+        <Link to="/contact" className="max-w-[1400px] mx-auto px-4 md:px-12 py-16 md:py-24 grid grid-cols-1 md:grid-cols-12 gap-6 items-end group block">
+          <div className="md:col-span-9">
+            <p className="font-mono text-[11px] tracking-[0.18em] uppercase opacity-40">07 / Contact</p>
+            <p className="reveal text-4xl md:text-6xl font-semibold tracking-tighter leading-none mt-3 group-hover:translate-x-2 transition-transform duration-500">What decision<br />can I change <span className="opacity-30">for you?</span></p>
+          </div>
+          <span className="md:col-span-3 font-mono text-xs tracking-[0.16em] uppercase md:text-right">Contact <span aria-hidden>→</span></span>
+        </Link>
+      </section>
+
     </div>
   );
 }

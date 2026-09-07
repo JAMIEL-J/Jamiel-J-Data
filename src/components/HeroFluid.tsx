@@ -9,21 +9,35 @@ export default function HeroFluid({ childrenBase, childrenReveal }: HeroFluidPro
   const webglCanvasRef = useRef<HTMLCanvasElement>(null);
   const canvasBaseRef = useRef<HTMLCanvasElement>(null);
   const canvasRevealRef = useRef<HTMLCanvasElement>(null);
+  const wrapRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
-    let animationFrameId: number;
+    let animationFrameId = 0;
+    let io: IntersectionObserver | null = null;
+    let visible = true;
+    let frame = 0;
+    let disposed = false;
+    const onVis = () => {
+      if (document.hidden) return;
+      // re-check hero visibility on tab return
+      if (wrapRef.current) {
+        const r = wrapRef.current.getBoundingClientRect();
+        visible = r.bottom > 0 && r.top < window.innerHeight;
+      } else visible = true;
+    };
 
     const initFluid = async () => {
       // Dynamic import to avoid SSR issues if used in Next.js
       const webGLFluid = (await import("webgl-fluid")).default;
+      if (disposed) return;
       
       const isMobile = window.innerWidth < 768;
       if (webglCanvasRef.current) {
         webGLFluid(webglCanvasRef.current, {
           IMMEDIATE: true,
           TRIGGER: "hover",
-          SIM_RESOLUTION: isMobile ? 128 : 192,
-          DYE_RESOLUTION: isMobile ? 512 : 768,
+          SIM_RESOLUTION: isMobile ? 96 : 144,
+          DYE_RESOLUTION: isMobile ? 256 : 512,
           DENSITY_DISSIPATION: 0.97,
           VELOCITY_DISSIPATION: 0.6,
           PRESSURE: 0.7,
@@ -37,25 +51,28 @@ export default function HeroFluid({ childrenBase, childrenReveal }: HeroFluidPro
         });
       }
 
+      // Pause WebGL copy when hero is off-screen — biggest scroll-jank win.
+      // Throttle copy to ~30fps (every 2nd frame): halves drawImage + blur cost.
+      io = new IntersectionObserver(([entry]) => (visible = entry.isIntersecting), { threshold: 0 });
+      if (wrapRef.current) io.observe(wrapRef.current);
+      document.addEventListener("visibilitychange", onVis);
+
       // Render loop to copy WebGL output to the two 2D knockout canvases
+      // Single RAF chain only — early-outs never re-schedule (fixes RAF pileup).
       const renderLoop = () => {
+        if (disposed) return;
+        animationFrameId = requestAnimationFrame(renderLoop);
+        if (!visible || document.hidden) return;
+        frame += 1;
+        if (frame % 2 !== 0) return; // 30fps copy
         const source = webglCanvasRef.current;
-        if (!source || source.clientWidth === 0 || source.clientHeight === 0 || source.width === 0 || source.height === 0) {
-          animationFrameId = requestAnimationFrame(renderLoop);
-          return;
-        }
+        if (!source || source.clientWidth === 0 || source.clientHeight === 0 || source.width === 0 || source.height === 0) return;
         const baseCanvas = canvasBaseRef.current;
         const revealCanvas = canvasRevealRef.current;
-        if (!baseCanvas || !revealCanvas) {
-          animationFrameId = requestAnimationFrame(renderLoop);
-          return;
-        }
+        if (!baseCanvas || !revealCanvas) return;
         const baseCtx = baseCanvas.getContext("2d");
         const revealCtx = revealCanvas.getContext("2d");
-        if (!baseCtx || !revealCtx) {
-          animationFrameId = requestAnimationFrame(renderLoop);
-          return;
-        }
+        if (!baseCtx || !revealCtx) return;
 
         // Sync dimensions only when valid
         if (baseCanvas.width !== source.clientWidth || baseCanvas.height !== source.clientHeight) {
@@ -75,8 +92,6 @@ export default function HeroFluid({ childrenBase, childrenReveal }: HeroFluidPro
             revealCtx.drawImage(source, 0, 0, revealCanvas.width, revealCanvas.height);
           } catch {}
         }
-
-        animationFrameId = requestAnimationFrame(renderLoop);
       };
 
       animationFrameId = requestAnimationFrame(renderLoop);
@@ -92,11 +107,16 @@ export default function HeroFluid({ childrenBase, childrenReveal }: HeroFluidPro
       }
     };
     
-    const events = ['mousemove', 'mousedown', 'mouseup', 'touchstart', 'touchmove', 'touchend'];
-    events.forEach(ev => window.addEventListener(ev, forwardEvent, { passive: false }));
+    // Coarse pointers: skip fluid event forwarding (native touch scroll stays smooth)
+    const isCoarseDown = window.matchMedia("(pointer: coarse)").matches;
+    const events = isCoarseDown ? [] as string[] : ['mousemove', 'mousedown', 'mouseup'];
+    events.forEach(ev => window.addEventListener(ev, forwardEvent, { passive: true }));
 
     return () => {
+      disposed = true;
       cancelAnimationFrame(animationFrameId);
+      io?.disconnect();
+      document.removeEventListener("visibilitychange", onVis);
       events.forEach(ev => window.removeEventListener(ev, forwardEvent));
     };
   }, []);
@@ -106,7 +126,7 @@ export default function HeroFluid({ childrenBase, childrenReveal }: HeroFluidPro
   const revealFilter = "grayscale(1) brightness(1.5) blur(10px) contrast(2500%)";
 
   return (
-    <div className="relative w-full min-h-[100dvh] bg-black overflow-hidden">
+    <div ref={wrapRef} className="relative w-full min-h-[100dvh] bg-black overflow-hidden">
       
       {/* HIDDEN WEBGL SOURCE */}
       <canvas 

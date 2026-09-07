@@ -57,7 +57,7 @@ export function Footer() {
 
         {/* Massive Typography */}
         <div className="overflow-hidden mb-16 border-b border-background/20 pb-16 flex justify-between">
-          <h2 className="text-[9vw] sm:text-[11vw] md:text-[15vw] font-black uppercase tracking-tighter leading-none flex flex-wrap">
+          <h2 className="text-[9vw] sm:text-[11vw] md:text-[15vw] font-bold uppercase tracking-tighter leading-none flex flex-wrap">
             {title.map((char, i) => (
               <span key={i} className="footer-char inline-block">
                 {char === " " ? "\u00A0" : char}
