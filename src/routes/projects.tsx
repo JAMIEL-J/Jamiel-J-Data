@@ -9,6 +9,10 @@ gsap.registerPlugin(ScrollTrigger);
 
 export const Route = createFileRoute("/projects")({
   component: Projects,
+  head: () => ({
+    links: [{ rel: "canonical", href: "https://www.jamiel-j.me/projects" }],
+    meta: [{ property: "og:url", content: "https://www.jamiel-j.me/projects" }],
+  }),
 });
 
 const CASE_STUDIES = [

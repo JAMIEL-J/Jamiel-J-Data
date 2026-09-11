@@ -29,6 +29,10 @@ function TwWords({ text }: { text: string }) {
 
 export const Route = createFileRoute("/")({
   component: Home,
+  head: () => ({
+    links: [{ rel: "canonical", href: "https://www.jamiel-j.me/" }],
+    meta: [{ property: "og:url", content: "https://www.jamiel-j.me/" }],
+  }),
 });
 
 function HeroContent({ isMask = false }: { isMask?: boolean }) {

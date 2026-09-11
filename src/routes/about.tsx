@@ -7,6 +7,10 @@ gsap.registerPlugin(ScrollTrigger);
 
 export const Route = createFileRoute("/about")({
   component: About,
+  head: () => ({
+    links: [{ rel: "canonical", href: "https://www.jamiel-j.me/about" }],
+    meta: [{ property: "og:url", content: "https://www.jamiel-j.me/about" }],
+  }),
 });
 
 function About() {

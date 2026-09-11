@@ -4,6 +4,10 @@ import gsap from "gsap";
 
 export const Route = createFileRoute("/contact")({
   component: Contact,
+  head: () => ({
+    links: [{ rel: "canonical", href: "https://www.jamiel-j.me/contact" }],
+    meta: [{ property: "og:url", content: "https://www.jamiel-j.me/contact" }],
+  }),
 });
 
 function Contact() {
