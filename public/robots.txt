@@ -1,4 +1,4 @@
 User-agent: *
 Allow: /
 
-Sitemap: https://jamiel-j-data.vercel.app/sitemap.xml
+Sitemap: https://www.jamiel-j.me/sitemap.xml
